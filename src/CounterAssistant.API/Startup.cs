@@ -1,5 +1,7 @@
 using CounterAssistant.API.HostedServices;
 using CounterAssistant.Bot;
+using CounterAssistant.DataAccess;
+using CounterAssistant.DataAccess.DTO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -9,10 +11,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Driver;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Telegram.Bot;
 
 namespace CounterAssistant.API
 {
@@ -28,6 +34,7 @@ namespace CounterAssistant.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var appSettings = AppSettings.FromConfig(Configuration);
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -35,9 +42,40 @@ namespace CounterAssistant.API
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CounterAssistant.API", Version = "v1" });
             });
 
+            services.AddSingleton<IMongoDatabase>(_ => 
+            {
+                var pack = new ConventionPack();
+                pack.Add(new CamelCaseElementNameConvention());
+
+                ConventionRegistry.Register(
+                   "CamelCaseConvention",
+                   pack,
+                   t => true);
+
+                var client = new MongoClient(appSettings.MongoHost);
+                return client.GetDatabase(appSettings.MongoDatabase);
+            });
+            services.AddSingleton<IMongoCollection<UserDto>>(provider => 
+            {
+                var mongo = provider.GetService<IMongoDatabase>();
+                return mongo.GetCollection<UserDto>(appSettings.MongoUserCollection);
+            });
+            services.AddSingleton<IMongoCollection<CounterDto>>(provider =>
+            {
+                var mongo = provider.GetService<IMongoDatabase>();
+                return mongo.GetCollection<CounterDto>(appSettings.MongoCounterCollection);
+            });
+
+            services.AddSingleton<IUserStore, UserStore>();
+            services.AddSingleton<ICounterStore, CounterStore>();
+
             services.AddSingleton<IContextProvider, InMemoryContextProvider>();
-            services.AddSingleton(provider => new BotService("1707852735:AAGZhEjiguV7zjP6lU88LbJQdAKno3SY7QM", provider.GetService<IContextProvider>()));
+
+            services.AddSingleton<TelegramBotClient>(new TelegramBotClient(appSettings.TelegramBotAccessToken));
+            services.AddSingleton<BotService>();
+
             services.AddHostedService<BotHostedService>();
+            services.AddHostedService<CounterProcessorHostedService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

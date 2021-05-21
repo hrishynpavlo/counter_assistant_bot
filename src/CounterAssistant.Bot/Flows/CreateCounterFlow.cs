@@ -36,7 +36,7 @@ namespace CounterAssistant.Bot.Flows
                         _builder.WithStep(step);
                         _currentStep = CreateFlowSteps.Completed;
                         var counter = _builder.Build();
-                        return new CreateCounterResult { IsSuccess = true, Counter = counter, Message = $"Счётчик <b>{counter.Title}</b> успешно создан" };
+                        return new CreateCounterResult { IsSuccess = true, Counter = counter, Message = $"Счётчик <b>{counter.Title.ToUpper()}</b> успешно создан" };
                     }
                 default: throw new Exception();
             }

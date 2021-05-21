@@ -21,6 +21,7 @@ namespace CounterAssistant.API.Controllers
         [HttpGet("version")]
         public IActionResult GetVersion()
         {
+            _logger.LogInformation("Called method {method}", nameof(GetVersion));
             return Ok(new { version = "v1" });
         }
     }

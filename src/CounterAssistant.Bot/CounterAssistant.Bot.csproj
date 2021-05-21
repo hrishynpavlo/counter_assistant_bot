@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CounterAssistant.Domain\CounterAssistant.Domain.csproj" />
+    <ProjectReference Include="..\CounterAssistant.DataAccess\CounterAssistant.DataAccess.csproj" />
   </ItemGroup>
 
 </Project>

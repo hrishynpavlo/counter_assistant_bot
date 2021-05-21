@@ -10,9 +10,16 @@ namespace CounterAssistant.Bot
     public class ChatContext
     {
         public int UserId { get; set; }
-        public int ChatId { get; set; }
+        public long ChatId { get; set; }
+        public string UserName { get; set; }
+        public string Name { get; set; }
         public string Command { get; set; }
         public CreateCounterFlow CreateCounterFlow { get; set; }
         public EditCounterFlow EditCounterFlow { get; set; }
+
+        public void SetCurrentCommand(string command)
+        {
+            Command = command;
+        }
     }
 }

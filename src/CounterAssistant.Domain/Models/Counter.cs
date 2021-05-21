@@ -10,8 +10,19 @@ namespace CounterAssistant.Domain.Models
         private string _title;
         private int _amount;
         private ushort _step;
-        private DateTime _lastModified;
+        private DateTime? _lastModified;
         private bool _isManual;
+
+
+        public Counter(Guid id, string title, int amount, ushort step, DateTime created, DateTime? lastModified)
+        {
+            _id = id;
+            _title = title;
+            _amount = amount;
+            _step = step;
+            _created = created;
+            _lastModified = lastModified;
+        }
 
         public Counter(string title, int amount, ushort step, bool isManual)
         {
@@ -23,8 +34,12 @@ namespace CounterAssistant.Domain.Models
             _isManual = isManual;
         }
 
+        public Guid Id => _id;
         public string Title => _title;
         public int Amount => _amount;
+        public ushort Step => _step;
+        public DateTime Created => _created;
+        public DateTime? LastModified => _lastModified;
 
         public void Increment()
         {

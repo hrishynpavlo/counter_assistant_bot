@@ -1,8 +1,8 @@
 ﻿using CounterAssistant.Bot.Extensions;
 using CounterAssistant.Bot.Flows;
-using CounterAssistant.Domain.Models;
+using CounterAssistant.DataAccess;
+using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,7 +19,8 @@ namespace CounterAssistant.Bot
     {
         private readonly ITelegramBotClient _botClient;
         private readonly IContextProvider _contextProvider;
-        private readonly ConcurrentDictionary<int, List<Counter>> _counters = new ConcurrentDictionary<int, List<Counter>>();
+        private readonly ICounterStore _store;
+        private readonly ILogger<BotService> _logger;
 
         private readonly static ReplyKeyboardMarkup DEFAULT_KEYBOARD = new ReplyKeyboardMarkup
         {
@@ -54,11 +55,12 @@ namespace CounterAssistant.Bot
             ResizeKeyboard = true
         };
 
-        public BotService(string token, IContextProvider contextProvider)
+        public BotService(TelegramBotClient botClient, IContextProvider contextProvider, ICounterStore store, ILogger<BotService> logger)
         {
-            _botClient = new TelegramBotClient(token);
+            _botClient = botClient;
             _contextProvider = contextProvider;
-            _counters = new ConcurrentDictionary<int, List<Counter>>();
+            _store = store;
+            _logger = logger;
         }
 
         public async Task StartAsync()
@@ -79,100 +81,101 @@ namespace CounterAssistant.Bot
         {
             if (e.Message.Text != null)
             {
-                var context = await _contextProvider.GetContext(e.Message.From.Id);
+                var context = await _contextProvider.GetContext(e.Message);
                 var message = e.Message.Text;
-                var chatId = e.Message.Chat.Id;
-                var userName = e.Message.From.FirstName;
 
                 if (message == START_COMMAND)
                 {
-                    await _botClient.SendTextMessageAsync(chatId, $"Привет {userName}, меня зовут Джарвис, я счётчик-бот и хочу облегчить тебе жизнь!", replyMarkup: DEFAULT_KEYBOARD);
+                    context.SetCurrentCommand(START_COMMAND);
+                    _logger.LogInformation("user {user} expose {command}", context.UserId, context.Command);
+                    await _botClient.SendTextMessageAsync(context.ChatId, $"Привет {context.Name}, меня зовут Джарвис, я счётчик-бот и хочу облегчить тебе жизнь!", replyMarkup: DEFAULT_KEYBOARD);
                 }
                 else if (message == CREATE_COUNTER_COMMAND || context.Command == CREATE_COUNTER_COMMAND)
                 {
-                    context.Command = CREATE_COUNTER_COMMAND;
+                    context.SetCurrentCommand(CREATE_COUNTER_COMMAND);
 
                     if (context.CreateCounterFlow == null) context.CreateCounterFlow = new CreateCounterFlow();
                     var result = context.CreateCounterFlow.Perform(message);
 
                     if (result.IsSuccess)
                     {
-                        context.Command = null;
+                        context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
                         context.CreateCounterFlow = null;
-                        if (_counters.TryGetValue(context.UserId, out var counters))
-                        {
-                            counters.Add(result.Counter);
-                        }
-                        else
-                        {
-                            _counters[context.UserId] = new List<Counter> { result.Counter };
-                        }
 
-                        await _botClient.SendTextMessageAsync(chatId, result.Message, parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(context.UserId));
+                        await _store.CreateCounterAsync(result.Counter, context.UserId);
+                        _logger.LogInformation("counter {id} successfully created", result.Counter.Id);
+
+                        await _botClient.SendTextMessageAsync(context.ChatId, result.Message, parseMode: ParseMode.Html, replyMarkup: await GetCounterKeyboard(context.UserId));
                     }
                     else
                     {
-                        await _botClient.SendTextMessageAsync(chatId, result.Message);
+                        await _botClient.SendTextMessageAsync(context.ChatId, result.Message);
                     }
                 }
                 else if(message == RESET_COUNTER_COMMAND)
                 {
                     // todo
-                    await _botClient.SendTextMessageAsync(chatId, text: "Эта фича еще в разработке", replyMarkup: DEFAULT_KEYBOARD);
+                    await _botClient.SendTextMessageAsync(context.ChatId, text: "Эта фича еще в разработке", replyMarkup: DEFAULT_KEYBOARD);
                 }
                 else if(message == DISPLAY_ALL_COUNTERS_COMMAND)
                 {
-                    context.Command = SELECT_COUNTER_COMMAND;
-                    await _botClient.SendTextMessageAsync(chatId, "Ваши счётчики:", replyMarkup: GetCounterKeyboard(context.UserId));
+                    context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
+                    await _botClient.SendTextMessageAsync(context.ChatId, "Ваши счётчики:", replyMarkup: await GetCounterKeyboard(context.UserId));
                 }
                 else if(message == BACK_COMMAND)
                 {
                     if (context.Command == SELECT_COUNTER_COMMAND)
                     {
-                        context.Command = null;
-                        await _botClient.SendTextMessageAsync(chatId, "Выбирите действие:", replyMarkup: DEFAULT_KEYBOARD);
+                        context.SetCurrentCommand(START_COMMAND);
+                        await _botClient.SendTextMessageAsync(context.ChatId, "Выбирите действие:", replyMarkup: DEFAULT_KEYBOARD);
                     }
                     else if(context.Command == MANAGE_COUNTER_COMMAND)
                     {
-                        context.Command = SELECT_COUNTER_COMMAND;
-                        await _botClient.SendTextMessageAsync(chatId, "Ваши счётчики:", replyMarkup: GetCounterKeyboard(context.UserId));
+                        context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
+                        //context.EditCounterFlow = null;
+                        await _botClient.SendTextMessageAsync(context.ChatId, "Ваши счётчики:", replyMarkup: await GetCounterKeyboard(context.UserId));
+                    }
+                    else
+                    {
+                        context.SetCurrentCommand(START_COMMAND);
+                        await _botClient.SendTextMessageAsync(context.ChatId, "Выбирите действие:", replyMarkup: DEFAULT_KEYBOARD);
                     }
                 }
                 else if(context.Command == SELECT_COUNTER_COMMAND)
                 {
                     var counterName = message.Substring(0, message.IndexOf(" -"));
-                    var counter = _counters[context.UserId].FirstOrDefault(c => c.Title == counterName);
+                    var counter = await _store.GetCounterByNameAsync(context.UserId, counterName);
                     context.EditCounterFlow = new EditCounterFlow(counter);
 
-                    context.Command = MANAGE_COUNTER_COMMAND;
+                    context.SetCurrentCommand(MANAGE_COUNTER_COMMAND);
 
-                    await _botClient.SendTextMessageAsync(chatId, $"<b>Счётчик {counter.Title} - {counter.Amount}</b>", parseMode: ParseMode.Html, replyMarkup: COUNTER_KEYBOARD);
+                    await _botClient.SendTextMessageAsync(context.ChatId, $"<b>Счётчик {counter.Title} - {counter.Amount}</b>\nШаг: {counter.Step}\nОбновлен последний раз: {counter.LastModified}", parseMode: ParseMode.Html, replyMarkup: COUNTER_KEYBOARD);
                 }
                 else if(message == DECREMENT_COMMAND)
                 {
                     context.EditCounterFlow.Counter.Decrement();
-                    await _botClient.SendTextMessageAsync(chatId, $"Счётчик успешно уменьшен: <b>{context.EditCounterFlow.Counter.Title} - {context.EditCounterFlow.Counter.Amount}</b>", parseMode: ParseMode.Html);
+                    _store.UpdateAsync(context.EditCounterFlow.Counter);
+                    await _botClient.SendTextMessageAsync(context.ChatId, $"Счётчик успешно уменьшен: <b>{context.EditCounterFlow.Counter.Title} - {context.EditCounterFlow.Counter.Amount}</b>", parseMode: ParseMode.Html);
                 }
                 else if(message == INCREMENT_COMMAND)
                 {
                     context.EditCounterFlow.Counter.Increment();
-                    await _botClient.SendTextMessageAsync(chatId, $"Счётчик успешно увеличен: <b>{context.EditCounterFlow.Counter.Title} - {context.EditCounterFlow.Counter.Amount}</b>", parseMode: ParseMode.Html);
+                    _store.UpdateAsync(context.EditCounterFlow.Counter);
+                    await _botClient.SendTextMessageAsync(context.ChatId, $"Счётчик успешно увеличен: <b>{context.EditCounterFlow.Counter.Title} - {context.EditCounterFlow.Counter.Amount}</b>", parseMode: ParseMode.Html);
                 }
                 else
                 {
+                    _logger.LogInformation("user {id} message: '{msg}' is not recognized", context.UserId, message);
                 }
             }
         }
-        private ReplyKeyboardMarkup GetCounterKeyboard(int userId)
-        {
-            if (_counters.TryGetValue(userId, out var counters))
-            {
-                var keyboard = counters.SelectMany(c => new List<List<KeyboardButton>> { new List<KeyboardButton> { new KeyboardButton($"{c.Title} - {c.Amount}") } }).ToList();
-                keyboard.AddNewLineButton(BACK_COMMAND);
-                return new ReplyKeyboardMarkup(keyboard) { ResizeKeyboard = true };
-            }
 
-            return null;
+        private async Task<ReplyKeyboardMarkup> GetCounterKeyboard(int userId)
+        {
+            var counters = await _store.GetCountersByUserIdAsync(userId);
+            var keyboard = counters.SelectMany(c => new List<List<KeyboardButton>> { new List<KeyboardButton> { new KeyboardButton($"{c.Title} - {c.Amount}") } }).ToList();
+            keyboard.AddNewLineButton(BACK_COMMAND);
+            return new ReplyKeyboardMarkup(keyboard) { ResizeKeyboard = true };
         }
 
         public void Dispose()
