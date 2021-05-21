@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Filters;
+using System.IO;
 
 namespace CounterAssistant.API
 {
@@ -18,7 +19,8 @@ namespace CounterAssistant.API
             Host.CreateDefaultBuilder(args)
                 .ConfigureHostConfiguration(config =>
                 {
-                    config.AddJsonFile("appSettings.json", optional: false)
+                    config.SetBasePath(Directory.GetCurrentDirectory())
+                        .AddJsonFile("appSettings.json", optional: false)
                         .AddJsonFile("secrets.json", optional: true)
                         .AddEnvironmentVariables()
                         .Build();
