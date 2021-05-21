@@ -18,10 +18,5 @@ jobs:
           heroku_app_name: "counter-assistant-bot"
           heroku_email: "pashagrishyn@gmail.com"
           usedocker: true
-          docker_build_args: |
-            GITHUB_BRANCH
-            GITHUB_SHA
-        env:
-          GITHUB_BRANCH: ${{github.ref}}
-          GITHUB_SHA: ${{github.sha}}
+          dontuseforce: true
       - run: echo 'Build v. ${{github.ref}}-${{github.sha}} successfully deployed to Heroku'
