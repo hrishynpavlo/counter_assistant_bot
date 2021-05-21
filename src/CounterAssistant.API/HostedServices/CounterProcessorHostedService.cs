@@ -52,6 +52,7 @@ namespace CounterAssistant.API.HostedServices
                     }
 
                     await _botClient.SendTextMessageAsync(chatId, $"Счётчик {counter.Title} автоматически увеличен до {counter.Amount}");
+                    _logger.LogInformation("Counter {counterId} proccesed in background for user {userId}", counter.Id, counter.UserId);
                 }
             });
 
