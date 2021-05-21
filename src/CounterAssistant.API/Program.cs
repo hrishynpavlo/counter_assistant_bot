@@ -20,7 +20,7 @@ namespace CounterAssistant.API
                 .ConfigureHostConfiguration(config =>
                 {
                     config.SetBasePath(Directory.GetCurrentDirectory())
-                        .AddJsonFile("appSettings.json", optional: false)
+                        .AddJsonFile("appsettings.json", optional: false)
                         .AddJsonFile("secrets.json", optional: true)
                         .AddEnvironmentVariables()
                         .Build();
