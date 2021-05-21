@@ -2,7 +2,8 @@ FROM mcr.microsoft.com/dotnet/sdk:5.0 as build-env
 ARG APP_NAME="CounterAssistant.API"
 WORKDIR /build
 COPY ./src/$APP_NAME .
-RUN dotnet restore && dotnet build
+RUN dotnet restore 
+RUN dotnet build
 RUN dotnet publish -c Release
 
 FROM mcr.microsoft.com/dotnet/aspnet:5.0
