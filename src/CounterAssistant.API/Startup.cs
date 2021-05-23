@@ -1,4 +1,5 @@
 using CounterAssistant.API.HostedServices;
+using CounterAssistant.API.Jobs;
 using CounterAssistant.Bot;
 using CounterAssistant.DataAccess;
 using CounterAssistant.DataAccess.DTO;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
+using Quartz;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -75,7 +77,33 @@ namespace CounterAssistant.API
             services.AddSingleton<BotService>();
 
             services.AddHostedService<BotHostedService>();
-            services.AddHostedService<CounterProcessorHostedService>();
+            //services.AddHostedService<CounterProcessorHostedService>();
+
+            services.AddQuartz(options => 
+            {
+                options.UseMicrosoftDependencyInjectionJobFactory();
+
+                var jobKey = new JobKey("daily_counter_processing");
+
+                options.AddJob<ProcessCountersJob>(jobKey);
+
+                options.AddTrigger(options =>
+                {
+                    options.ForJob(jobKey)
+                        .StartNow();
+                });
+
+                options.AddTrigger(options => 
+                {
+                    options.ForJob(jobKey)
+                        .WithCronSchedule("0 5 0 ? * *");
+                });
+            });
+
+            services.AddQuartzHostedService(options =>
+            {
+                options.WaitForJobsToComplete = true;
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
