@@ -1,4 +1,5 @@
-﻿using CounterAssistant.Bot.Extensions;
+﻿using App.Metrics;
+using CounterAssistant.Bot.Extensions;
 using CounterAssistant.Bot.Flows;
 using CounterAssistant.DataAccess;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,7 @@ namespace CounterAssistant.Bot
         private readonly IContextProvider _contextProvider;
         private readonly ICounterStore _store;
         private readonly ILogger<BotService> _logger;
+        private readonly IMetricsRoot _metrics;
 
         private readonly static ReplyKeyboardMarkup DEFAULT_KEYBOARD = new ReplyKeyboardMarkup
         {
@@ -55,12 +57,13 @@ namespace CounterAssistant.Bot
             ResizeKeyboard = true
         };
 
-        public BotService(TelegramBotClient botClient, IContextProvider contextProvider, ICounterStore store, ILogger<BotService> logger)
+        public BotService(TelegramBotClient botClient, IContextProvider contextProvider, ICounterStore store, ILogger<BotService> logger, IMetricsRoot metrics)
         {
             _botClient = botClient;
             _contextProvider = contextProvider;
             _store = store;
             _logger = logger;
+            _metrics = metrics;
         }
 
         public async Task StartAsync()
@@ -81,6 +84,8 @@ namespace CounterAssistant.Bot
         {
             if (e.Message.Text != null)
             {
+                _metrics.Measure.Counter.Increment(BotMetrics.RecievedMessages);
+
                 var context = await _contextProvider.GetContext(e.Message);
 
                 try
@@ -152,7 +157,7 @@ namespace CounterAssistant.Bot
 
                         context.SetCurrentCommand(MANAGE_COUNTER_COMMAND);
 
-                        await _botClient.SendTextMessageAsync(context.ChatId, $"<b>Счётчик {counter.Title} - {counter.Amount}</b>\nШаг: {counter.Step}\nОбновлен последний раз: {counter.LastModified}", parseMode: ParseMode.Html, replyMarkup: COUNTER_KEYBOARD);
+                        await _botClient.SendTextMessageAsync(context.ChatId, $"<b>Счётчик {counter.Title} - {counter.Amount}</b>\nШаг: {counter.Step}\nОбновлен последний раз: {counter.LastModifiedAt}", parseMode: ParseMode.Html, replyMarkup: COUNTER_KEYBOARD);
                     }
                     else if (message == DECREMENT_COMMAND)
                     {

@@ -1,8 +1,5 @@
 ﻿using CounterAssistant.Domain.Models;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CounterAssistant.DataAccess
@@ -11,5 +8,6 @@ namespace CounterAssistant.DataAccess
     {
         Task<User> GetUserAsync(int id);
         Task CreateUserAsync(User user);
+        Task<List<User>> GetUsersById(IEnumerable<int> ids);
     }
 }

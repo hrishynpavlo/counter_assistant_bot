@@ -1,9 +1,13 @@
-﻿using CounterAssistant.DataAccess;
+﻿using App.Metrics;
+using CounterAssistant.DataAccess;
 using Microsoft.Extensions.Logging;
 using Quartz;
-using System.Collections.Generic;
+using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
 namespace CounterAssistant.API.Jobs
 {
@@ -14,37 +18,59 @@ namespace CounterAssistant.API.Jobs
         private readonly ICounterStore _store;
         private readonly TelegramBotClient _botClient;
         private readonly IUserStore _userStore;
+        private readonly IMetricsRoot _metrics;
 
-        private readonly Dictionary<int, long> _userChatMap;
-
-        public ProcessCountersJob(ICounterStore store, ILogger<ProcessCountersJob> logger, TelegramBotClient botClient, IUserStore userStore)
+        public ProcessCountersJob(ICounterStore store, ILogger<ProcessCountersJob> logger, TelegramBotClient botClient, IUserStore userStore, IMetricsRoot metrics)
         {
             _store = store;
             _logger = logger;
             _botClient = botClient;
             _userStore = userStore;
-            _userChatMap = new Dictionary<int, long>();
+            _metrics = metrics;
         }
 
         public async Task Execute(IJobExecutionContext context)
         {
-            var counters = await _store.GetCountersAsync();
+            _logger.LogInformation("Job {job} has started", nameof(ProcessCountersJob));
+            _metrics.Measure.Counter.Increment(ApiMetrics.JobStarted, new MetricTags("job_name", "process_counter"));
 
-            foreach (var counter in counters)
+            try
             {
-                var d = counter.ToDomain();
-                d.Increment();
-                await _store.UpdateAsync(d);
+                var counters = await _store.GetCountersAsync();
+                var userIds = counters.Select(x => x.UserId).Distinct().ToArray();
+                var users = (await _userStore.GetUsersById(userIds)).ToDictionary(x => x.TelegramId);
 
-                if (!_userChatMap.TryGetValue(counter.UserId, out var chatId))
+                foreach (var group in counters.GroupBy(c => c.UserId))
                 {
-                    var user = await _userStore.GetUserAsync(counter.UserId);
-                    chatId = user.TelegramChatId;
-                    _userChatMap.TryAdd(counter.UserId, user.TelegramChatId);
-                }
+                    if(!users.TryGetValue(group.Key, out var user))
+                    {
+                        _logger.LogWarning("Couldn't find user {userId}", group.Key);
+                        continue;
+                    }
 
-                await _botClient.SendTextMessageAsync(chatId, $"Счётчик {counter.Title} автоматически увеличен до {counter.Amount}");
-                _logger.LogInformation("Counter {counterId} proccesed in background for user {userId}", counter.Id, counter.UserId);
+                    var message = new StringBuilder();
+                    var domains = group.Select(x => x.ToDomain()).ToArray();
+
+                    foreach (var domain in domains)
+                    {
+                        domain.Increment();
+
+                        _logger.LogInformation("Counter {counterId} proccesed in background job {job} for user {userId}", domain.Id, nameof(ProcessCountersJob), user.TelegramId);
+                        message.AppendLine($"Счётчик <b>{domain.Title.ToUpper()}</b> автоматически увеличен на <b>{domain.Step}</b>.\n<b>{domain.Title.ToUpper()} = {domain.Step}</b>");
+                    }
+
+                    await _store.UpdateManyAsync(domains);
+                    await _botClient.SendTextMessageAsync(user.TelegramChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error during execution job {job}", nameof(ProcessCountersJob));
+                throw;
+            }
+            finally
+            {
+                _logger.LogInformation("Job {job} has finished", nameof(ProcessCountersJob));
             }
         }
     }

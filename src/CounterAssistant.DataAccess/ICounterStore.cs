@@ -14,5 +14,7 @@ namespace CounterAssistant.DataAccess
         Task CreateCounterAsync(Counter counter, int userId);
         Task UpdateAsync(Counter counter);
         Task<List<CounterDto>> GetCountersAsync();
+
+        Task UpdateManyAsync(IEnumerable<Counter> counters);
     }
 }

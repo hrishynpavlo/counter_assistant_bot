@@ -1,3 +1,5 @@
+using App.Metrics;
+using App.Metrics.Formatters.Prometheus;
 using CounterAssistant.API.HostedServices;
 using CounterAssistant.API.Jobs;
 using CounterAssistant.Bot;
@@ -15,6 +17,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Quartz;
 using System;
+using System.Linq;
 using System.Text;
 using Telegram.Bot;
 
@@ -103,7 +106,15 @@ namespace CounterAssistant.API
             services.AddSingleton<IMongoCollection<CounterDto>>(provider =>
             {
                 var mongo = provider.GetService<IMongoDatabase>();
-                return mongo.GetCollection<CounterDto>(appSettings.MongoCounterCollection);
+                var collection = mongo.GetCollection<CounterDto>(appSettings.MongoCounterCollection);
+
+                var builder = Builders<CounterDto>.IndexKeys;
+                var lastModifiedIndex = new CreateIndexModel<CounterDto>(builder.Ascending(x => x.LastModifiedAt));
+                var isManulIndex = new CreateIndexModel<CounterDto>(builder.Ascending(x => x.IsManual));
+
+                collection.Indexes.CreateMany(new[] { lastModifiedIndex, isManulIndex });
+
+                return collection;
             });
 
             services.AddSingleton<IUserStore, UserStore>();
@@ -141,10 +152,20 @@ namespace CounterAssistant.API
             {
                 options.WaitForJobsToComplete = true;
             });
+
+            var metrics = new MetricsBuilder().OutputMetrics.AsPrometheusPlainText().Build();
+            services.AddMetrics(metrics);
+            services.AddMetricsEndpoints(options => 
+            {
+                options.MetricsEndpointEnabled = true;
+                options.MetricsEndpointOutputFormatter = Metrics.Instance.OutputMetricsFormatters.OfType<MetricsPrometheusTextOutputFormatter>().First();
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseMetricsEndpoint();
+
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CounterAssistant.API v1"));
 
