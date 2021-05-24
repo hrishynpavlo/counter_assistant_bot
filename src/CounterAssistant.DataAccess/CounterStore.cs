@@ -69,8 +69,8 @@ namespace CounterAssistant.DataAccess
 
         public async Task<Counter> GetCounterByIdAsync(Guid id)
         {
-            var cursor = await _db.FindAsync(x => x.Id == id);
-            return (await cursor.FirstOrDefaultAsync())?.ToDomain();
+            var counter = await _db.Find(x => x.Id == id).FirstOrDefaultAsync();
+            return counter?.ToDomain();
         }
     }
 }

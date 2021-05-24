@@ -8,7 +8,7 @@ namespace CounterAssistant.DataAccess.DTO
     public class CounterDto
     {
         [BsonId]
-        [BsonGuidRepresentation(GuidRepresentation.Unspecified)]
+        [BsonGuidRepresentation(GuidRepresentation.Standard)]
         public Guid Id { get; set; }
         public string Title { get; set; }
         public ushort Step { get; set; }

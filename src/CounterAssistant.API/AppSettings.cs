@@ -14,9 +14,9 @@ namespace CounterAssistant.API
         {
             return new AppSettings
             {
-                TelegramBotAccessToken = configuration.GetValue<string>("telegram:token"),
-                MongoHost = configuration.GetValue<string>("mongo:host"),
-                MongoDatabase = configuration.GetValue<string>("mongo:database"),
+                TelegramBotAccessToken = configuration.GetValue<string>("telegram:token") ?? configuration.GetValue<string>("TELEGRAM_TOKEN"),
+                MongoHost = configuration.GetValue<string>("mongo:host") ?? configuration.GetValue<string>("MONGO_HOST"),
+                MongoDatabase = configuration.GetValue<string>("mongo:database") ?? configuration.GetValue<string>("MONGO_DATABASE"),
                 MongoUserCollection = configuration.GetValue<string>("mongo:collection:users"),
                 MongoCounterCollection = configuration.GetValue<string>("mongo:collection:counters")
             };

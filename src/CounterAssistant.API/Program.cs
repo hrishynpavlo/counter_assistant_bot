@@ -22,7 +22,7 @@ namespace CounterAssistant.API
                     config.SetBasePath(Directory.GetCurrentDirectory())
                         .AddJsonFile("appsettings.json", optional: false)
                         .AddJsonFile("secrets.json", optional: true)
-                        .AddEnvironmentVariables()
+                        .AddEnvironmentVariables(prefix: "CA_")
                         .Build();
                 })
                 .ConfigureLogging(config =>
@@ -34,6 +34,7 @@ namespace CounterAssistant.API
                 {
                     config
                         .Filter.ByExcluding(Matching.FromSource("Microsoft"))
+                        .Filter.ByExcluding(Matching.FromSource("Quartz"))
                         .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
                 })
                 .ConfigureWebHostDefaults(webBuilder =>

@@ -1,4 +1,5 @@
 ﻿using CounterAssistant.DataAccess;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -8,6 +9,7 @@ namespace CounterAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/counter")]
+    [Authorize]
     public class CounterController : ControllerBase
     {
         private readonly ILogger<CounterController> _logger;
@@ -23,6 +25,11 @@ namespace CounterAssistant.API.Controllers
         public async Task<IActionResult> UpdateCounter([FromRoute] Guid id, [FromQuery] int amount, [FromQuery]string title, [FromQuery] ushort step)
         {
             var counter = await _counterStore.GetCounterByIdAsync(id);
+            if(counter == null)
+            {
+                return NotFound();
+            }
+
             counter.Update(amount, step, title);
             await _counterStore.UpdateAsync(counter);
 
