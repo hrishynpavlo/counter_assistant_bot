@@ -14,10 +14,11 @@ namespace CounterAssistant.DataAccess.DTO
         public ushort Step { get; set; }
         public int Amount { get; set; }
         public int UserId { get; set; }
-        public DateTime Created { get; set; }
-        public DateTime? LastModified { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime LastModifiedAt { get; set; }
+        public bool IsManual { get; set; }
 
-        public Counter ToDomain() => new Counter(Id, Title, Amount, Step, Created, LastModified);
+        public Counter ToDomain() => new Counter(Id, Title, Amount, Step, CreatedAt, LastModifiedAt, IsManual);
 
         public static CounterDto FromDomain(Counter counter, int userId)
         {
@@ -25,11 +26,12 @@ namespace CounterAssistant.DataAccess.DTO
             {
                 Id = counter.Id,
                 Amount = counter.Amount,
-                Created = counter.Created,
-                LastModified = counter.LastModified,
+                CreatedAt = counter.CreatedAt,
+                LastModifiedAt = counter.LastModifiedAt,
                 Step = counter.Step,
                 Title = counter.Title,
-                UserId = userId
+                UserId = userId,
+                IsManual = counter.IsManual
             };
         }
     }

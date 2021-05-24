@@ -30,6 +30,7 @@ namespace CounterAssistant.API
                     config.ClearProviders();
                     
                 })
+                .UseMetricsEndpoints()
                 .UseSerilog((_, __, config) => 
                 {
                     config
