@@ -1,7 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:5.0 as build-env
 WORKDIR /build
 COPY ./src/ .
-RUN dotnet restore && build
+RUN dotnet restore
+RUN dotnet build
 RUN dotnet test
 RUN dotnet publish -c Release
 
