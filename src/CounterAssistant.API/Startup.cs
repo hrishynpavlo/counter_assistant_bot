@@ -5,20 +5,16 @@ using CounterAssistant.API.Jobs;
 using CounterAssistant.Bot;
 using CounterAssistant.DataAccess;
 using CounterAssistant.DataAccess.DTO;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Quartz;
-using System;
 using System.Linq;
-using System.Text;
 using Telegram.Bot;
 
 namespace CounterAssistant.API
@@ -32,7 +28,6 @@ namespace CounterAssistant.API
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             var appSettings = AppSettings.FromConfig(Configuration);
@@ -41,46 +36,7 @@ namespace CounterAssistant.API
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CounterAssistant.API", Version = "v1" });
-
-                c.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme 
-                {
-                    Scheme = JwtBearerDefaults.AuthenticationScheme,
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.ApiKey,
-                    Name = "Authorization"
-                });
-
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme 
-                        {
-                            Reference = new OpenApiReference 
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = JwtBearerDefaults.AuthenticationScheme
-                            },
-                        },
-                        Array.Empty<string>()
-                    }
-                });
             });
-
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.RequireHttpsMetadata = false;
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidIssuer = "MyAuthServer",
-                        ValidateAudience = true,
-                        ValidAudience = "MyAuthClient",
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("mysupersecret_secretkey!123!123"))
-                    };
-                });
 
             services.AddSingleton<IMongoDatabase>(_ => 
             {
@@ -172,9 +128,6 @@ namespace CounterAssistant.API
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
-            app.UseAuthentication();
-            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {

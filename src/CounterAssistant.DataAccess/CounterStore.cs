@@ -66,12 +66,6 @@ namespace CounterAssistant.DataAccess
             return counters;
         }
 
-        public async Task<Counter> GetCounterByIdAsync(Guid id)
-        {
-            var counter = await _db.Find(x => x.Id == id).FirstOrDefaultAsync();
-            return counter?.ToDomain();
-        }
-
         public async Task UpdateManyAsync(IEnumerable<Counter> counters)
         {
             var operations = counters.Select(x => new UpdateOneModel<CounterDto>(
