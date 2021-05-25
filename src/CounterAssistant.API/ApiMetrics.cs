@@ -5,9 +5,15 @@ namespace CounterAssistant.API
 {
     public static class ApiMetrics
     {
-        public static CounterOptions JobStarted => new CounterOptions 
+        public static CounterOptions SucessfullyFinishedJobs => new CounterOptions 
         {
-            Name = "background_job_started",
+            Name = "background_job_successully_finished",
+            MeasurementUnit = Unit.Items
+        };
+
+        public static CounterOptions FailedJobs => new CounterOptions 
+        {
+            Name = "background_job_failed",
             MeasurementUnit = Unit.Items
         };
     }

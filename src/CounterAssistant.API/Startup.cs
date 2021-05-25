@@ -122,7 +122,7 @@ namespace CounterAssistant.API
 
             services.AddSingleton<IContextProvider, InMemoryContextProvider>();
 
-            services.AddSingleton<TelegramBotClient>(new TelegramBotClient(appSettings.TelegramBotAccessToken));
+            services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(appSettings.TelegramBotAccessToken));
             services.AddSingleton<BotService>();
 
             services.AddHostedService<BotHostedService>();

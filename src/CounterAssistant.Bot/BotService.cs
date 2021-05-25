@@ -57,7 +57,7 @@ namespace CounterAssistant.Bot
             ResizeKeyboard = true
         };
 
-        public BotService(TelegramBotClient botClient, IContextProvider contextProvider, ICounterStore store, ILogger<BotService> logger, IMetricsRoot metrics)
+        public BotService(ITelegramBotClient botClient, IContextProvider contextProvider, ICounterStore store, ILogger<BotService> logger, IMetricsRoot metrics)
         {
             _botClient = botClient;
             _contextProvider = contextProvider;

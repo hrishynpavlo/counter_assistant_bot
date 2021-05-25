@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CounterAssistant.Domain", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CounterAssistant.Bot", "CounterAssistant.Bot\CounterAssistant.Bot.csproj", "{3D45D28D-6F61-4FAF-B59C-D869D6BD9A14}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CounterAssistant.DataAccess", "CounterAssistant.DataAccess\CounterAssistant.DataAccess.csproj", "{E1F1AE2F-E282-437D-8AD9-EDD0688D9A54}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CounterAssistant.DataAccess", "CounterAssistant.DataAccess\CounterAssistant.DataAccess.csproj", "{E1F1AE2F-E282-437D-8AD9-EDD0688D9A54}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CounterAssistant.UnitTests", "CounterAssistant.UnitTests\CounterAssistant.UnitTests.csproj", "{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{E1F1AE2F-E282-437D-8AD9-EDD0688D9A54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1F1AE2F-E282-437D-8AD9-EDD0688D9A54}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1F1AE2F-E282-437D-8AD9-EDD0688D9A54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
