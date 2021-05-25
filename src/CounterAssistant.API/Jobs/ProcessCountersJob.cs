@@ -16,11 +16,13 @@ namespace CounterAssistant.API.Jobs
     {
         private readonly ILogger<ProcessCountersJob> _logger;
         private readonly ICounterStore _store;
-        private readonly TelegramBotClient _botClient;
+        private readonly ITelegramBotClient _botClient;
         private readonly IUserStore _userStore;
         private readonly IMetricsRoot _metrics;
 
-        public ProcessCountersJob(ICounterStore store, ILogger<ProcessCountersJob> logger, TelegramBotClient botClient, IUserStore userStore, IMetricsRoot metrics)
+        private readonly static MetricTags Tag = new MetricTags("job_name", "process_counter");
+
+        public ProcessCountersJob(ICounterStore store, ILogger<ProcessCountersJob> logger, ITelegramBotClient botClient, IUserStore userStore, IMetricsRoot metrics)
         {
             _store = store;
             _logger = logger;
@@ -32,7 +34,6 @@ namespace CounterAssistant.API.Jobs
         public async Task Execute(IJobExecutionContext context)
         {
             _logger.LogInformation("Job {job} has started", nameof(ProcessCountersJob));
-            _metrics.Measure.Counter.Increment(ApiMetrics.JobStarted, new MetricTags("job_name", "process_counter"));
 
             try
             {
@@ -56,16 +57,19 @@ namespace CounterAssistant.API.Jobs
                         domain.Increment();
 
                         _logger.LogInformation("Counter {counterId} proccesed in background job {job} for user {userId}", domain.Id, nameof(ProcessCountersJob), user.TelegramId);
-                        message.AppendLine($"Счётчик <b>{domain.Title.ToUpper()}</b> автоматически увеличен на <b>{domain.Step}</b>.\n<b>{domain.Title.ToUpper()} = {domain.Step}</b>");
+                        message.AppendLine($"Счётчик <b>{domain.Title.ToUpper()}</b> автоматически увеличен на <b>{domain.Step}</b>.\n<b>{domain.Title.ToUpper()} = {domain.Amount}</b>");
                     }
 
                     await _store.UpdateManyAsync(domains);
                     await _botClient.SendTextMessageAsync(user.TelegramChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
                 }
+
+                _metrics.Measure.Counter.Increment(ApiMetrics.SucessfullyFinishedJobs, Tag);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during execution job {job}", nameof(ProcessCountersJob));
+                _metrics.Measure.Counter.Increment(ApiMetrics.FailedJobs, Tag);
                 throw;
             }
             finally
