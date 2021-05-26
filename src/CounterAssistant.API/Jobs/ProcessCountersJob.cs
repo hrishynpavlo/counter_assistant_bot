@@ -14,21 +14,21 @@ namespace CounterAssistant.API.Jobs
     [DisallowConcurrentExecution]
     public class ProcessCountersJob : IJob
     {
-        private readonly ILogger<ProcessCountersJob> _logger;
-        private readonly ICounterStore _store;
+        private readonly ICounterStore _counterStore;
         private readonly ITelegramBotClient _botClient;
         private readonly IUserStore _userStore;
+        private readonly ILogger<ProcessCountersJob> _logger;
         private readonly IMetricsRoot _metrics;
 
         private readonly static MetricTags Tag = new MetricTags("job_name", "process_counter");
 
-        public ProcessCountersJob(ICounterStore store, ILogger<ProcessCountersJob> logger, ITelegramBotClient botClient, IUserStore userStore, IMetricsRoot metrics)
+        public ProcessCountersJob(ICounterStore counterStore, ITelegramBotClient botClient, IUserStore userStore, ILogger<ProcessCountersJob> logger, IMetricsRoot metrics)
         {
-            _store = store;
-            _logger = logger;
-            _botClient = botClient;
-            _userStore = userStore;
-            _metrics = metrics;
+            _counterStore = counterStore ?? throw new ArgumentNullException(nameof(counterStore));
+            _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
+            _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -37,7 +37,7 @@ namespace CounterAssistant.API.Jobs
 
             try
             {
-                var counters = await _store.GetCountersAsync();
+                var counters = await _counterStore.GetCountersAsync();
                 var userIds = counters.Select(x => x.UserId).Distinct().ToArray();
                 var users = (await _userStore.GetUsersById(userIds)).ToDictionary(x => x.TelegramId);
 
@@ -60,7 +60,7 @@ namespace CounterAssistant.API.Jobs
                         message.AppendLine($"Счётчик <b>{domain.Title.ToUpper()}</b> автоматически увеличен на <b>{domain.Step}</b>.\n<b>{domain.Title.ToUpper()} = {domain.Amount}</b>");
                     }
 
-                    await _store.UpdateManyAsync(domains);
+                    await _counterStore.UpdateManyAsync(domains);
                     await _botClient.SendTextMessageAsync(user.TelegramChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
                 }
 

@@ -11,7 +11,6 @@ using Quartz;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -24,74 +23,138 @@ namespace CounterAssistant.UnitTests.Jobs
     [TestFixture]
     public class ProcessCountersJobTests
     {
+        private Mock<ILogger<ProcessCountersJob>> Logger;
+        private Mock<IMetricsRoot> Metrics;
+        private Mock<IJobExecutionContext> JobContext; 
+
+        [OneTimeSetUp]
+        public void Init()
+        {
+            Logger = new Mock<ILogger<ProcessCountersJob>>();
+            Metrics = new Mock<IMetricsRoot>();
+
+            var measure = new Mock<IMeasureMetrics>();
+            var counterMetric = new Mock<IMeasureCounterMetrics>();
+            measure.Setup(x => x.Counter).Returns(counterMetric.Object);
+            Metrics.Setup(x => x.Measure).Returns(measure.Object);
+
+            JobContext = new Mock<IJobExecutionContext>();
+        }
+
         [Test]
-        public void Job_DoesntTrhow()
+        public void ProcessCountersJob_ACoupleOfUsersWithACoupleOfCounters_DoesntTrhow()
         {
             //ARRANGE
-            var counter1 = GetCounter();
-            var user1 = GetUser();
+            var user1 = GetUser(1);
+            var user2 = GetUser(2);
+
+            var counter1_1 = GetCounter(user1.TelegramId);
+            var counter1_2 = GetCounter(user1.TelegramId);
+
+            var counter2_1 = GetCounter(user2.TelegramId, 2);
+            var counter2_2 = GetCounter(user2.TelegramId, 3, 10);
 
             var counters = new List<CounterDto>
             {
-                counter1
+                counter1_1, counter1_2, counter2_1, counter2_2
             };
 
             var users = new List<Domain.Models.User> 
             {
-                user1
+                user1, user2
             };
 
             var counterStore = new Mock<ICounterStore>();
-            var logger = new Mock<ILogger<ProcessCountersJob>>();
             var bot = new Mock<ITelegramBotClient>();
             var userStore = new Mock<IUserStore>();
-            var metrics = new Mock<IMetricsRoot>();
-            var measure = new Mock<IMeasureMetrics>();
-            var counterMetric = new Mock<IMeasureCounterMetrics>();
-            var context = new Mock<IJobExecutionContext>();
 
             counterStore.Setup(x => x.GetCountersAsync()).ReturnsAsync(counters);
             counterStore.Setup(x => x.UpdateManyAsync(It.IsAny<IEnumerable<Counter>>()))
                 .Returns<IEnumerable<Counter>>(list => 
                 {
-                    counter1.Amount = list.ToArray()[0].Amount;
+                    foreach(var updatedCounter in list)
+                    {
+                        counters.FirstOrDefault(x => x.Id == updatedCounter.Id).Amount = updatedCounter.Amount;
+                    }
+
                     return Task.CompletedTask;
                 });
 
             userStore.Setup(x => x.GetUsersById(It.IsAny<IEnumerable<int>>())).ReturnsAsync(users);
 
-            measure.Setup(x => x.Counter).Returns(counterMetric.Object);
-            metrics.Setup(x => x.Measure).Returns(measure.Object);
-
-            long? sentToChatId = null;
+            var chatIds = new HashSet<long>();
             bot.Setup(x => x.SendTextMessageAsync(It.IsAny<ChatId>(), It.IsAny<string>(), It.IsAny<ParseMode>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<IReplyMarkup>(), It.IsAny<CancellationToken>()))
                 .Returns<ChatId, string, ParseMode, bool, bool, int, IReplyMarkup, CancellationToken>((chatId, _, __, ___, ____, _____, ______, _______) => 
                 {
-                    sentToChatId = chatId.Identifier;
+                    chatIds.Add(chatId.Identifier);
                     return Task.FromResult(new Message()); 
                 });
 
-            var job = new ProcessCountersJob(counterStore.Object, logger.Object, bot.Object, userStore.Object, metrics.Object);
+            var job = new ProcessCountersJob(counterStore.Object, bot.Object, userStore.Object, Logger.Object, Metrics.Object);
 
             //ACT
-            var oldAmount = counter1.Amount;
-            AsyncTestDelegate act = async() => await job.Execute(context.Object);
+            var oldAmounts = counters.ToDictionary(x => x.Id, x => x.Amount);
+            AsyncTestDelegate act = async() => await job.Execute(JobContext.Object);
 
             //ASSERT
             Assert.DoesNotThrowAsync(act);
-            Assert.AreEqual(oldAmount + counter1.Step, counter1.Amount);
-            Assert.IsTrue(sentToChatId.HasValue);
-            Assert.AreEqual(user1.TelegramChatId, sentToChatId.Value);
+            Assert.AreEqual(2, chatIds.Count);
+            Assert.Multiple(() => 
+            {
+                Assert.IsTrue(chatIds.Contains(user1.TelegramChatId));
+                Assert.IsTrue(chatIds.Contains(user2.TelegramChatId));
+            });
+
+            Assert.Multiple(() =>
+            {
+                foreach (var counter in counters)
+                {
+                    Assert.IsTrue(oldAmounts.TryGetValue(counter.Id, out var oldAmount));
+                    Assert.AreEqual(counter.Amount, oldAmount + counter.Step);
+                }
+            });
         }
 
-        private static CounterDto GetCounter()
+        [Test]
+        public void ProcessCountersJob_UsersDoesNotExist_DoesntTrhow()
+        {
+            //ARRANGE
+            var user = GetUser(1);
+            var counter = GetCounter(user.TelegramId);
+
+            var counterStore = new Mock<ICounterStore>();
+            counterStore.Setup(x => x.GetCountersAsync()).ReturnsAsync(new List<CounterDto> { counter });
+
+            var wasMessagesSent = false;
+            var bot = new Mock<ITelegramBotClient>();
+            bot.Setup(x => x.SendTextMessageAsync(It.IsAny<ChatId>(), It.IsAny<string>(), It.IsAny<ParseMode>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<IReplyMarkup>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync(() => 
+               {
+                   wasMessagesSent = true;
+                   return new Message(); 
+               });
+
+            var userStore = new Mock<IUserStore>();
+            userStore.Setup(x => x.GetUsersById(It.IsAny<IEnumerable<int>>())).ReturnsAsync(new List<Domain.Models.User>());
+
+            var job = new ProcessCountersJob(counterStore.Object, bot.Object, userStore.Object, Logger.Object, Metrics.Object);
+
+            //ACT
+            AsyncTestDelegate act = async () => await job.Execute(JobContext.Object);
+
+            //ASSERT
+            Assert.DoesNotThrowAsync(act);
+            Assert.IsFalse(wasMessagesSent);
+        }
+
+        private static CounterDto GetCounter(int userId, ushort step = 1, int amount = 0)
         {
             return new CounterDto
             {
-                Amount = 0,
-                Step = 1,
+                Amount = amount,
+                Step = step,
                 Id = Guid.NewGuid(),
-                UserId = 1,
+                UserId = userId,
                 Title = Guid.NewGuid().ToString(),
                 CreatedAt = DateTime.UtcNow,
                 LastModifiedAt = DateTime.UtcNow,
@@ -99,12 +162,12 @@ namespace CounterAssistant.UnitTests.Jobs
             };
         }
 
-        private static Domain.Models.User GetUser()
+        private static Domain.Models.User GetUser(int id)
         {
             return new Domain.Models.User
             {
-                TelegramId = 1,
-                TelegramChatId = 1
+                TelegramId = id,
+                TelegramChatId = id
             };
         }
     }
