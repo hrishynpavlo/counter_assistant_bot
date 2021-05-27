@@ -10,22 +10,19 @@ namespace CounterAssistant.DataAccess.DTO
         [BsonRepresentation(BsonType.Int32)]
         public int Id { get; set; }
 
-        public long ChatId { get; set; }
-
-        public string UserName { get; set; }
-
         public string FirstName { get; set; }
         public string LastName { get; set; }
+
+        public UserBotInfo BotInfo { get; set; }
 
         public User ToDomain()
         {
             return new User
             {
                 TelegramId = Id,
-                TelegramChatId = ChatId,
                 FirstName = FirstName,
                 LastName = LastName,
-                TelegramUserName = UserName
+                BotInfo = BotInfo
             }; 
         }
 
@@ -34,10 +31,9 @@ namespace CounterAssistant.DataAccess.DTO
             return new UserDto
             {
                 Id = user.TelegramId,
-                ChatId = user.TelegramChatId,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                UserName = user.TelegramUserName
+                BotInfo = user.BotInfo
             };
         }
     }

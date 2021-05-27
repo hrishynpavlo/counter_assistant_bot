@@ -1,6 +1,7 @@
 ﻿using CounterAssistant.Domain.Builders;
 using CounterAssistant.Domain.Models;
 using System;
+using System.Collections.Generic;
 
 namespace CounterAssistant.Bot.Flows
 {
@@ -9,11 +10,16 @@ namespace CounterAssistant.Bot.Flows
         private CreateFlowSteps _currentStep;
         private CounterBuilder _builder;
 
-        public CreateCounterFlow()
+        public CreateFlowSteps State => _currentStep;
+        public Dictionary<string, object> Args => _builder.GetArgs();
+
+        private CreateCounterFlow(CreateFlowSteps step, CounterBuilder builder)
         {
-            _currentStep = CreateFlowSteps.None;
-            _builder = CounterBuilder.Default;
+            _currentStep = step;
+            _builder = builder;
         }
+
+        public CreateCounterFlow() : this(CreateFlowSteps.None, CounterBuilder.Default) { }
 
         public CreateCounterResult Perform(string message)
         {
@@ -40,6 +46,26 @@ namespace CounterAssistant.Bot.Flows
                     }
                 default: throw new Exception();
             }
+        }
+
+        public static CreateCounterFlow RestoreFromContext(User user)
+        {
+            if(!Enum.TryParse<CreateFlowSteps>(user.BotInfo.CreateCounterFlowInfo.State, ignoreCase: true, out var step)) 
+            {
+                step = CreateFlowSteps.None;
+            }
+
+            var builder = CounterBuilder.Default;
+            if(user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue("step", out var counterStep))
+            {
+                builder.WithStep((ushort)counterStep);
+            }
+            if(user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue("name", out var counterName))
+            {
+                builder.WithName((string)counterName);
+            }
+
+            return new CreateCounterFlow(step, builder);
         }
     }
 

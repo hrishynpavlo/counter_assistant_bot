@@ -11,5 +11,6 @@
         public const string INCREMENT_COMMAND = "+";
         public const string SELECT_COUNTER_COMMAND = "/select";
         public const string MANAGE_COUNTER_COMMAND = "/manage";
+        public const string SETTINGS_COMMAND = "Настройки";
     }
 }

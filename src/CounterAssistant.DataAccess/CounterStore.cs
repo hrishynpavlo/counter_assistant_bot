@@ -77,5 +77,11 @@ namespace CounterAssistant.DataAccess
 
             _logger.LogInformation("Operation {op}: requested updates: {total}. Matched total: {matched}, modified total: {modified}", "counterBulkUpdate", counters.Count(), result.MatchedCount, result.ModifiedCount);
         }
+
+        public async Task<Counter> GetCounterAsync(Guid id)
+        {
+            var counter = await _db.Find(x => x.Id == id).FirstOrDefaultAsync();
+            return counter?.ToDomain();
+        }
     }
 }

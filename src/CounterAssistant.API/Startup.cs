@@ -116,6 +116,8 @@ namespace CounterAssistant.API
                 options.MetricsEndpointEnabled = true;
                 options.MetricsEndpointOutputFormatter = Metrics.Instance.OutputMetricsFormatters.OfType<MetricsPrometheusTextOutputFormatter>().First();
             });
+
+            services.AddMemoryCache();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

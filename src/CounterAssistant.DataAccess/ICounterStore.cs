@@ -1,5 +1,6 @@
 ﻿using CounterAssistant.DataAccess.DTO;
 using CounterAssistant.Domain.Models;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -13,5 +14,6 @@ namespace CounterAssistant.DataAccess
         Task UpdateAsync(Counter counter);
         Task<List<CounterDto>> GetCountersAsync();
         Task UpdateManyAsync(IEnumerable<Counter> counters);
+        Task<Counter> GetCounterAsync(Guid id);
     }
 }

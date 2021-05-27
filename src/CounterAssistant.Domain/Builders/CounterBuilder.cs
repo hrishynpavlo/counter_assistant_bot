@@ -1,11 +1,12 @@
 ﻿using CounterAssistant.Domain.Models;
+using System.Collections.Generic;
 
 namespace CounterAssistant.Domain.Builders
 {
     public class CounterBuilder
     {
         private string _title;
-        private ushort _step;
+        private ushort? _step;
 
         public CounterBuilder WithName(string title)
         {
@@ -21,7 +22,17 @@ namespace CounterAssistant.Domain.Builders
 
         public Counter Build()
         {
-            return new Counter(_title, 0, _step, true);
+            return new Counter(_title, 0, _step ?? 1, true);
+        }
+
+        public Dictionary<string, object> GetArgs()
+        {
+            var args = new Dictionary<string, object>();
+
+            if (!string.IsNullOrWhiteSpace(_title)) args["name"] = _title;
+            if (_step.HasValue) args["step"] = _step.Value;
+
+            return args;
         }
 
         public static CounterBuilder Default => new CounterBuilder();

@@ -61,7 +61,7 @@ namespace CounterAssistant.API.Jobs
                     }
 
                     await _counterStore.UpdateManyAsync(domains);
-                    await _botClient.SendTextMessageAsync(user.TelegramChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
+                    await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
                 }
 
                 _metrics.Measure.Counter.Increment(ApiMetrics.SucessfullyFinishedJobs, Tag);
