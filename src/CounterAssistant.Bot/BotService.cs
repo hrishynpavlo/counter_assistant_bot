@@ -138,7 +138,7 @@ namespace CounterAssistant.Bot
                 {
                     var counters = await _store.GetCountersByUserIdAsync(context.UserId);
                     context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
-                    await _botClient.SendTextMessageAsync(context.ChatId, text: "Ваши счётчики: \n" + GetCountersMessage(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
+                    await _botClient.SendTextMessageAsync(context.ChatId, text: "Ваши счётчики: \n\n" + GetCountersMessage(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
                 }
                 else if (message == BACK_COMMAND)
                 {
@@ -155,7 +155,7 @@ namespace CounterAssistant.Bot
                         context.ClearSelectedCounter();
 
                         var counters = await _store.GetCountersByUserIdAsync(context.UserId);
-                        await _botClient.SendTextMessageAsync(context.ChatId, text: "Ваши счётчики: \n" + GetCountersMessage(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
+                        await _botClient.SendTextMessageAsync(context.ChatId, text: "Ваши счётчики: \n\n" + GetCountersMessage(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
                     }
                     else
                     {
@@ -200,7 +200,7 @@ namespace CounterAssistant.Bot
 
         private string GetCounterMessage(Counter counter)
         {
-            return $"<b>Счётчик {counter.Title.ToUpper()}\nШаг: {counter.Step}\nСоздан: {counter.CreatedAt}\nОбновлен последний раз: {counter.LastModifiedAt}\nРежим: {(counter.IsManual ? "ручной" : "автоматический")}</b>\n";
+            return $"<b>Счётчик: {counter.Title.ToUpper()}\nЗначнение: {counter.Amount}\nШаг: {counter.Step}\nСоздан: {counter.CreatedAt}\nОбновлен последний раз: {counter.LastModifiedAt}\nРежим: {(counter.IsManual ? "ручной" : "автоматический")}</b>\n";
         }
 
         private string GetCountersMessage(List<Counter> counters)
