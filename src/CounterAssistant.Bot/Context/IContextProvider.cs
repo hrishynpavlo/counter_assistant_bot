@@ -10,7 +10,7 @@ namespace CounterAssistant.Bot
 {
     public interface IContextProvider
     {
-        Task<ChatContext> GetContext(Message message);
+        Task<ChatContext> GetContextAsync(Message message);
     }
 
     public class InMemoryContextProvider : IContextProvider
@@ -20,16 +20,18 @@ namespace CounterAssistant.Bot
         private readonly ICounterStore _counterStore;
         private readonly ILogger<InMemoryContextProvider> _logger;
 
-        public InMemoryContextProvider(IUserStore userStore, IMemoryCache cache, ICounterStore counterStore, ILogger<InMemoryContextProvider> logger)
+        public InMemoryContextProvider(IUserStore userStore, ICounterStore counterStore, IMemoryCache cache, ILogger<InMemoryContextProvider> logger)
         {
-            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _counterStore = counterStore ?? throw new ArgumentNullException(nameof(counterStore));
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<ChatContext> GetContext(Message message)
+        public async Task<ChatContext> GetContextAsync(Message message)
         {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+
             var userId = message.From.Id;
 
             var context = await _cache.GetOrCreateAsync(userId, async cacheOptions => 
@@ -42,7 +44,7 @@ namespace CounterAssistant.Bot
 
                 if(user == null)
                 {
-                    user = new Domain.Models.User();
+                    user = Domain.Models.User.Default(userId, message.Chat.Id, message.From.FirstName, message.From.LastName, message.From.Username, BotCommands.START_COMMAND);
                     await _userStore.CreateUserAsync(user);
                 }
 
@@ -53,7 +55,7 @@ namespace CounterAssistant.Bot
                     counter = await _counterStore.GetCounterAsync(user.BotInfo.SelectedCounterId.Value);
                 }
 
-                return ChatContext.FromUser(user, counter);
+                return ChatContext.Restore(user, counter);
             });
 
             return context;

@@ -50,19 +50,29 @@ namespace CounterAssistant.Bot.Flows
 
         public static CreateCounterFlow RestoreFromContext(User user)
         {
-            if(!Enum.TryParse<CreateFlowSteps>(user.BotInfo.CreateCounterFlowInfo.State, ignoreCase: true, out var step)) 
+            if(user.BotInfo.CreateCounterFlowInfo == null)
+            {
+                return new CreateCounterFlow();
+            }
+
+            var builder = CounterBuilder.Default;
+
+            if (string.IsNullOrWhiteSpace(user.BotInfo.CreateCounterFlowInfo.State) || !Enum.TryParse<CreateFlowSteps>(user.BotInfo.CreateCounterFlowInfo.State, ignoreCase: true, out var step)) 
             {
                 step = CreateFlowSteps.None;
             }
 
-            var builder = CounterBuilder.Default;
-            if(user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue("step", out var counterStep))
+            if(user.BotInfo.CreateCounterFlowInfo.Args != null)
             {
-                builder.WithStep((ushort)counterStep);
-            }
-            if(user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue("name", out var counterName))
-            {
-                builder.WithName((string)counterName);
+                if (user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue("step", out var counterStep))
+                {
+                    builder.WithStep((ushort)counterStep);
+                }
+
+                if (user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue("name", out var counterName))
+                {
+                    builder.WithName((string)counterName);
+                }
             }
 
             return new CreateCounterFlow(step, builder);

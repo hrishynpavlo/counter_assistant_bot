@@ -87,7 +87,7 @@ namespace CounterAssistant.Bot
             {
                 _metrics.Measure.Counter.Increment(BotMetrics.RecievedMessages);
 
-                var context = await _contextProvider.GetContext(e.Message);
+                var context = await _contextProvider.GetContextAsync(e.Message);
                 var message = e.Message.Text;
 
                 try
@@ -156,7 +156,7 @@ namespace CounterAssistant.Bot
                     {
                         var counterName = message.Substring(0, message.IndexOf(" -"));
                         var counter = await _store.GetCounterByNameAsync(context.UserId, counterName);
-                        context.SelectedCounter = counter;
+                        context.SelectCounter(counter);
 
                         context.SetCurrentCommand(MANAGE_COUNTER_COMMAND);
 

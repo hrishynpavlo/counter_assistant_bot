@@ -9,7 +9,23 @@ namespace CounterAssistant.Domain.Models
         public string FirstName { get; set; }
         public string LastName { get; set; }
 
-        public UserBotInfo BotInfo { get; set; } 
+        public UserBotInfo BotInfo { get; set; }
+
+        public static User Default(int id, long chatId, string firstName, string lastName, string userName, string command)
+        {
+            return new User
+            {
+                TelegramId = id,
+                FirstName = firstName,
+                LastName = lastName,
+                BotInfo = new UserBotInfo
+                {
+                    ChatId = chatId,
+                    LastCommand = command,
+                    UserName = userName
+                }
+            };
+        }
     }
 
     public class UserBotInfo
