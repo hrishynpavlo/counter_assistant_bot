@@ -1,15 +1,14 @@
-﻿using CounterAssistant.Bot;
+﻿using App.Metrics;
+using App.Metrics.Counter;
+using CounterAssistant.Bot;
 using CounterAssistant.Bot.Flows;
 using CounterAssistant.DataAccess;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot.Types;
 
@@ -21,7 +20,14 @@ namespace CounterAssistant.UnitTests.Bot
         private Mock<IUserStore> _userStore;
         private Mock<ICounterStore> _counterStore;
         private Mock<IMemoryCache> _cache;
+        private Mock<IMetricsRoot> _metrics;
         private Mock<ILogger<InMemoryContextProvider>> _logger;
+
+        private readonly static ContextProviderSettings _settings = new ContextProviderSettings
+        {
+            ExpirationTime = TimeSpan.FromMinutes(30),
+            ProlongationTime = TimeSpan.FromMinutes(3)
+        };
 
         [SetUp]
         public void Init()
@@ -29,6 +35,13 @@ namespace CounterAssistant.UnitTests.Bot
             _userStore = new Mock<IUserStore>();
             _counterStore = new Mock<ICounterStore>();
             _cache = new Mock<IMemoryCache>();
+            _metrics = new Mock<IMetricsRoot>();
+
+            var counter = new Mock<IMeasureCounterMetrics>();
+            var measure = new Mock<IMeasureMetrics>();
+            measure.Setup(x => x.Counter).Returns(counter.Object);
+            _metrics.Setup(x => x.Measure).Returns(measure.Object);
+
             _logger = new Mock<ILogger<InMemoryContextProvider>>();
         }
 
@@ -36,7 +49,7 @@ namespace CounterAssistant.UnitTests.Bot
         public void GetContext_NullMessage_ThrowsArgumentNullException()
         {
             //ARRANGE
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, _cache.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, _cache.Object, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var act = new AsyncTestDelegate(async () => await contextProvider.GetContextAsync(null));
@@ -67,7 +80,7 @@ namespace CounterAssistant.UnitTests.Bot
             var cache = new MemoryCache(new MemoryCacheOptions());
             cache.Set(message.From.Id, context);
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var result = await contextProvider.GetContextAsync(message);
@@ -110,7 +123,7 @@ namespace CounterAssistant.UnitTests.Bot
             var cache = new MemoryCache(new MemoryCacheOptions());
             _userStore.Setup(x => x.GetUserAsync(It.IsAny<int>())).ReturnsAsync(user);
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var context = await contextProvider.GetContextAsync(message);
@@ -146,7 +159,7 @@ namespace CounterAssistant.UnitTests.Bot
 
             var cache = new MemoryCache(new MemoryCacheOptions());
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var context = await contextProvider.GetContextAsync(message);
@@ -162,7 +175,5 @@ namespace CounterAssistant.UnitTests.Bot
             Assert.AreEqual(CreateFlowSteps.None, context.CreateCounterFlow.State);
             Assert.IsNull(context.SelectedCounter);
         }
-
-        //TODO: ONDELETE CACHE TEST
     }
 }

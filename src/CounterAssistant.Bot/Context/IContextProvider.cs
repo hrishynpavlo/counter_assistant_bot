@@ -1,4 +1,5 @@
-﻿using CounterAssistant.DataAccess;
+﻿using App.Metrics;
+using CounterAssistant.DataAccess;
 using CounterAssistant.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -18,13 +19,17 @@ namespace CounterAssistant.Bot
         private readonly IMemoryCache _cache;
         private readonly IUserStore _userStore;
         private readonly ICounterStore _counterStore;
+        private readonly ContextProviderSettings _settings;
+        private readonly IMetricsRoot _metrics;
         private readonly ILogger<InMemoryContextProvider> _logger;
 
-        public InMemoryContextProvider(IUserStore userStore, ICounterStore counterStore, IMemoryCache cache, ILogger<InMemoryContextProvider> logger)
+        public InMemoryContextProvider(IUserStore userStore, ICounterStore counterStore, IMemoryCache cache, ContextProviderSettings settings, IMetricsRoot metrics, ILogger<InMemoryContextProvider> logger)
         {
             _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
             _counterStore = counterStore ?? throw new ArgumentNullException(nameof(counterStore));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -36,10 +41,10 @@ namespace CounterAssistant.Bot
 
             var context = await _cache.GetOrCreateAsync(userId, async cacheOptions => 
             {
-                cacheOptions.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
-                cacheOptions.SlidingExpiration = TimeSpan.FromMinutes(3);
                 cacheOptions.RegisterPostEvictionCallback(OnDelete);
-
+                cacheOptions.AbsoluteExpirationRelativeToNow = _settings.ExpirationTime;
+                cacheOptions.SlidingExpiration = _settings.ProlongationTime;
+                
                 var user = await _userStore.GetUserAsync(userId);
 
                 if(user == null)
@@ -54,7 +59,7 @@ namespace CounterAssistant.Bot
                 {
                     counter = await _counterStore.GetCounterAsync(user.BotInfo.SelectedCounterId.Value);
                 }
-
+                _metrics.Measure.Counter.Increment(BotMetrics.CachedContext);
                 return ChatContext.Restore(user, counter);
             });
 
@@ -83,6 +88,8 @@ namespace CounterAssistant.Bot
                             }
                         }
                     });
+
+                    _metrics.Measure.Counter.Decrement(BotMetrics.CachedContext);
                 }
                 else
                 {

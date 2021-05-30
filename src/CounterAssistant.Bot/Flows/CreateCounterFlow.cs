@@ -50,6 +50,8 @@ namespace CounterAssistant.Bot.Flows
 
         public static CreateCounterFlow RestoreFromContext(User user)
         {
+            if (user == null || user.BotInfo == null) throw new ArgumentNullException(nameof(user));
+
             if(user.BotInfo.CreateCounterFlowInfo == null)
             {
                 return new CreateCounterFlow();
