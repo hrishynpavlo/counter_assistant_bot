@@ -57,11 +57,11 @@ namespace CounterAssistant.API.Jobs
                         domain.Increment();
 
                         _logger.LogInformation("Counter {counterId} proccesed in background job {job} for user {userId}", domain.Id, nameof(ProcessCountersJob), user.TelegramId);
-                        message.AppendLine($"Счётчик <b>{domain.Title.ToUpper()}</b> автоматически увеличен на <b>{domain.Step}</b>.\n<b>{domain.Title.ToUpper()} = {domain.Amount}</b>");
+                        message.AppendLine($"Счётчик <b>{domain.Title.ToUpper()}</b> автоматически увеличен на <b>{domain.Step}</b>.\n<b>{domain.Title.ToUpper()}: {domain.Amount}</b>\n");
                     }
 
                     await _counterStore.UpdateManyAsync(domains);
-                    await _botClient.SendTextMessageAsync(user.TelegramChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
+                    await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
                 }
 
                 _metrics.Measure.Counter.Increment(ApiMetrics.SucessfullyFinishedJobs, Tag);

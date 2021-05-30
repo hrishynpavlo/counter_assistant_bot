@@ -14,6 +14,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Quartz;
+using System.IO;
 using System.Linq;
 using Telegram.Bot;
 
@@ -76,6 +77,11 @@ namespace CounterAssistant.API
             services.AddSingleton<IUserStore, UserStore>();
             services.AddSingleton<ICounterStore, CounterStore>();
 
+            services.AddSingleton<ContextProviderSettings>(_ => new ContextProviderSettings 
+            { 
+                ExpirationTime = appSettings.CacheExpirationTime,
+                ProlongationTime = appSettings.CacheProlongationTime 
+            });
             services.AddSingleton<IContextProvider, InMemoryContextProvider>();
 
             services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(appSettings.TelegramBotAccessToken));
@@ -116,6 +122,8 @@ namespace CounterAssistant.API
                 options.MetricsEndpointEnabled = true;
                 options.MetricsEndpointOutputFormatter = Metrics.Instance.OutputMetricsFormatters.OfType<MetricsPrometheusTextOutputFormatter>().First();
             });
+
+            services.AddMemoryCache();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -132,6 +140,11 @@ namespace CounterAssistant.API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapGet("/code-coverage", async context => 
+                {
+                    var bytes = File.ReadAllBytes("Summary.txt");
+                    await context.Response.Body.WriteAsync(bytes); 
+                });
             });
         }
     }

@@ -101,8 +101,8 @@ namespace CounterAssistant.UnitTests.Jobs
             Assert.AreEqual(2, chatIds.Count);
             Assert.Multiple(() => 
             {
-                Assert.IsTrue(chatIds.Contains(user1.TelegramChatId));
-                Assert.IsTrue(chatIds.Contains(user2.TelegramChatId));
+                Assert.IsTrue(chatIds.Contains(user1.BotInfo.ChatId));
+                Assert.IsTrue(chatIds.Contains(user2.BotInfo.ChatId));
             });
 
             Assert.Multiple(() =>
@@ -167,7 +167,10 @@ namespace CounterAssistant.UnitTests.Jobs
             return new Domain.Models.User
             {
                 TelegramId = id,
-                TelegramChatId = id
+                BotInfo = new UserBotInfo
+                {
+                    ChatId = id
+                }
             };
         }
     }

@@ -26,8 +26,7 @@ namespace CounterAssistant.DataAccess
 
         public async Task<User> GetUserAsync(int id)
         {
-            var cursor = await _db.FindAsync(x => x.Id == id);
-            var user = await cursor.FirstOrDefaultAsync();
+            var user = await _db.Find(x => x.Id == id).FirstOrDefaultAsync();
             return user?.ToDomain();
         }
 
@@ -36,6 +35,17 @@ namespace CounterAssistant.DataAccess
             var filter = new FilterDefinitionBuilder<UserDto>().In(x => x.Id, ids);
             var users = await _db.Find(filter).ToListAsync();
             return users.Select(x => x.ToDomain()).ToList();
+        }
+
+        public async Task UpdateUserAsync(User user)
+        {
+            var update = new UpdateDefinitionBuilder<UserDto>()
+                .Set(x => x.BotInfo.CreateCounterFlowInfo, user.BotInfo.CreateCounterFlowInfo)
+                .Set(x => x.BotInfo.LastCommand, user.BotInfo.LastCommand)
+                .Set(x => x.BotInfo.SelectedCounterId, user.BotInfo.SelectedCounterId);
+
+
+            await _db.FindOneAndUpdateAsync(x => x.Id == user.TelegramId, update);
         }
     }
 }
