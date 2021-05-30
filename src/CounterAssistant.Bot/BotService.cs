@@ -155,7 +155,7 @@ namespace CounterAssistant.Bot
                         context.ClearSelectedCounter();
 
                         var counters = await _store.GetCountersByUserIdAsync(context.UserId);
-                        await _botClient.SendTextMessageAsync(context.ChatId, text: "Ваши счётчики: \n\n" + GetCountersMessage(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
+                        await _botClient.SendTextMessageAsync(context.ChatId, text: "Выберите счётчик: " , parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
                     }
                     else
                     {
@@ -200,7 +200,7 @@ namespace CounterAssistant.Bot
 
         private string GetCounterMessage(Counter counter)
         {
-            return $"<b>Счётчик: {counter.Title.ToUpper()}\nЗначнение: {counter.Amount}\nШаг: {counter.Step}\nСоздан: {counter.CreatedAt}\nОбновлен последний раз: {counter.LastModifiedAt}\nРежим: {(counter.IsManual ? "ручной" : "автоматический")}</b>\n";
+            return $"<b>Счётчик:</b> {counter.Title.ToUpper()}\n<b>Значнение:</b> {counter.Amount}\n<b>Шаг:</b> {counter.Step}\n<b>Создан:</b> {counter.CreatedAt}\n<b>Обновлен последний раз:</b> {counter.LastModifiedAt}\n<b>Режим:</b> {(counter.IsManual ? "ручной" : "автоматический")}\n";
         }
 
         private string GetCountersMessage(List<Counter> counters)
