@@ -1,5 +1,7 @@
 using App.Metrics;
 using App.Metrics.Formatters.Prometheus;
+using CounterAssistant.API.Extensions;
+using CounterAssistant.API.HealthChecks;
 using CounterAssistant.API.HostedServices;
 using CounterAssistant.API.Jobs;
 using CounterAssistant.Bot;
@@ -14,7 +16,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Quartz;
-using System.IO;
 using System.Linq;
 using Telegram.Bot;
 
@@ -115,15 +116,33 @@ namespace CounterAssistant.API
                 options.WaitForJobsToComplete = true;
             });
 
-            var metrics = new MetricsBuilder().OutputMetrics.AsPrometheusPlainText().Build();
+            var metrics = new MetricsBuilder()
+                .Configuration
+                .Configure(options => 
+                {
+                    options.GlobalTags["env"] = appSettings.Environment;
+                    options.GlobalTags["server"] = appSettings.Server;
+                    options.GlobalTags["app"] = appSettings.AppName;
+                })
+                .OutputMetrics
+                .AsPrometheusPlainText()
+                .Build();
+
             services.AddMetrics(metrics);
             services.AddMetricsEndpoints(options => 
             {
                 options.MetricsEndpointEnabled = true;
-                options.MetricsEndpointOutputFormatter = Metrics.Instance.OutputMetricsFormatters.OfType<MetricsPrometheusTextOutputFormatter>().First();
+                options.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.OfType<MetricsPrometheusTextOutputFormatter>().First();
+                options.MetricsTextEndpointEnabled = false;
+                options.EnvironmentInfoEndpointEnabled = false;
             });
 
             services.AddMemoryCache();
+
+            services.AddHealthChecks()
+                .AddMongoDb($"{appSettings.MongoHost}/{appSettings.MongoDatabase}", tags: new[] { "database", "mongodb" })
+                .AddTelegramBot();
+            
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -140,11 +159,11 @@ namespace CounterAssistant.API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapGet("/code-coverage", async context => 
-                {
-                    var bytes = File.ReadAllBytes("Summary.txt");
-                    await context.Response.Body.WriteAsync(bytes); 
-                });
+
+                endpoints.MapHealthChecks("/health/liveness", HealthCheck.DefaultOptions);
+                endpoints.MapHealthChecks("/health/readiness", HealthCheck.DefaultOptions);
+
+                endpoints.MapCodeCoverage();
             });
         }
     }
