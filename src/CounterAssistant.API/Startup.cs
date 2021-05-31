@@ -140,7 +140,7 @@ namespace CounterAssistant.API
             services.AddMemoryCache();
 
             services.AddHealthChecks()
-                .AddMongoDb($"{appSettings.MongoHost}/{appSettings.MongoDatabase}", tags: new[] { "database", "mongodb" })
+                .AddMongoDb(appSettings.MongoHost, tags: new[] { "database", "mongodb" })
                 .AddTelegramBot();
             
         }
