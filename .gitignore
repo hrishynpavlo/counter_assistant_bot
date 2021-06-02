@@ -365,4 +365,5 @@ FodyWeavers.xsd
 
 # Github Actions
 .github/*
+
 codecoverage/
