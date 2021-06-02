@@ -45,6 +45,7 @@ jobs:
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"hrishynpavlo_counter_assistant_bot" /o:"hrishynpavlo" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
           dotnet build ./src/CounterAssistant.sln
           dotnet test ./src/CounterAssistant.sln --no-build --collect "XPlat Code Coverage"  -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-          dotnet tool install dotnet-reportgenerator-globaltool --tool-path ./
-          reportgenerator.exe -reports:./src/**/TestResults/**/coverage.opencover.xml -targetdir: codecoverage  -reporttypes:SonarQube
+          dotnet tool install dotnet-reportgenerator-globaltool --tool-path tools
+          Get-ChildItem
+          ./tools/reportgenerator.exe -reports:./src/**/TestResults/**/coverage.opencover.xml -targetdir: codecoverage  -reporttypes:SonarQube
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
