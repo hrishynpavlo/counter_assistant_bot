@@ -37,7 +37,7 @@ namespace CounterAssistant.API
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "CounterAssistant.API", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Counter Assistant Bot API", Version = "v1" });
             });
 
             services.AddSingleton<IMongoDatabase>(_ => 
@@ -50,7 +50,8 @@ namespace CounterAssistant.API
                    pack,
                    t => true);
 
-                //inportant to map csuuid to uuid
+                //important: map csuuid as uuid 
+                //obsolete: Configure serializers doesn't work
                 MongoDefaults.GuidRepresentation = GuidRepresentation.Standard;
 
                 var client = new MongoClient(appSettings.MongoHost);
@@ -94,7 +95,8 @@ namespace CounterAssistant.API
             {
                 options.UseMicrosoftDependencyInjectionJobFactory();
 
-                var jobKey = new JobKey("daily_counter_processing");
+                const string jobName = "daily_counter_processing";
+                var jobKey = new JobKey(jobName);
 
                 options.AddJob<ProcessCountersJob>(jobKey);
 

@@ -52,6 +52,10 @@ namespace CounterAssistant.Bot
                 },
                 new List<KeyboardButton>
                 {
+                    new KeyboardButton(RESET_COUNTER_COMMAND)
+                },
+                new List<KeyboardButton>
+                {
                     new KeyboardButton(BACK_COMMAND)
                 }
             },
@@ -181,7 +185,12 @@ namespace CounterAssistant.Bot
                 else if (message == INCREMENT_COMMAND)
                 {
                     context.SelectedCounter.Increment();
-                    await _botClient.SendTextMessageAsync(context.ChatId, $"Счётчик успешно увеличен: <b>{context.SelectedCounter.Title}: {context.SelectedCounter.Amount}</b>", parseMode: ParseMode.Html);
+                    await _botClient.SendTextMessageAsync(context.ChatId, $"Счётчик успешно увеличен: <b>{context.SelectedCounter.Title}: {context.SelectedCounter.Amount}</b>.", parseMode: ParseMode.Html);
+                }
+                else if(message == RESET_COUNTER_COMMAND)
+                {
+                    context.SelectedCounter.Reset();
+                    await _botClient.SendTextMessageAsync(context.ChatId, $"Значение счётчика <b>{context.SelectedCounter.Title}</b> успешно сброшено до 0.", parseMode: ParseMode.Html);
                 }
                 else
                 {
