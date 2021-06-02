@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -12,7 +11,11 @@ namespace CounterAssistant.API.HealthChecks
 {
     public static class HealthCheck
     {
-        private static JsonSerializerOptions SerializerOptions = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = true };
+        private static JsonSerializerOptions SerializerOptions = new JsonSerializerOptions 
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, 
+            WriteIndented = true
+        };
 
         public static HealthCheckOptions DefaultOptions => new HealthCheckOptions 
         {
@@ -49,13 +52,12 @@ namespace CounterAssistant.API.HealthChecks
         public bool Healthy { get; set; }
         public Check[] Checks { get; set; }
     }
+
     public class Check
     {
         public string Name { get; set; }
         public bool Health { get; set; }
         public IEnumerable<string> Tags { get; set; }
-
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string Error { get; set; }
     }
 }

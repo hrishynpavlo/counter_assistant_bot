@@ -223,6 +223,28 @@ namespace CounterAssistant.UnitTests.Bot
             Assert.AreEqual(expected, context.SelectedCounter.Amount);
         }
 
+        [Test]
+        public async Task HandleMessage_ResetCounter_SuccessTest()
+        {
+            //ARRANGE
+            var context = new ChatContext
+            {
+                ChatId = 1,
+            };
+
+            context.SelectCounter(new Domain.Models.Counter("test", 100, 1, true));
+            var lastModifiedBeforeUpdate = context.SelectedCounter.LastModifiedAt;
+
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+
+            //ACT
+            await _bot.HandleMessage(CreateMessage(BotCommands.RESET_COUNTER_COMMAND));
+
+            //ASSERT
+            Assert.AreEqual(0, context.SelectedCounter.Amount);
+            Assert.Greater(context.SelectedCounter.LastModifiedAt, lastModifiedBeforeUpdate);
+        }
+
         private static Message CreateMessage(string text, int id = 1)
         {
             return new Message

@@ -71,6 +71,7 @@ namespace CounterAssistant.Domain.Models
         public void Reset()
         {
             _amount = 0;
+            _lastModifiedAt = DateTime.UtcNow;
         }
     }
 }
