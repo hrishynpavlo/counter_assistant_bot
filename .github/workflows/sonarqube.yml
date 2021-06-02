@@ -7,7 +7,7 @@ on:
     types: [opened, synchronize, reopened]
 jobs:
   build:
-    name: Build
+    name: SonarQube analysis
     runs-on: windows-latest
     steps:
       - name: Set up JDK 11
@@ -45,4 +45,5 @@ jobs:
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"hrishynpavlo_counter_assistant_bot" /o:"hrishynpavlo" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
           cd ./src 
           dotnet build
+          cd ../
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
