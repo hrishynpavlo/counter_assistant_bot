@@ -146,12 +146,7 @@ namespace CounterAssistant.Bot
                 }
                 else if (message == BACK_COMMAND)
                 {
-                    if (context.Command == SELECT_COUNTER_COMMAND)
-                    {
-                        context.SetCurrentCommand(START_COMMAND);
-                        await _botClient.SendTextMessageAsync(context.ChatId, "Выберите действие:", replyMarkup: DEFAULT_KEYBOARD);
-                    }
-                    else if (context.Command == MANAGE_COUNTER_COMMAND)
+                    if (context.Command == MANAGE_COUNTER_COMMAND)
                     {
                         context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
 
@@ -163,6 +158,7 @@ namespace CounterAssistant.Bot
                     }
                     else
                     {
+                        // for SELECT_COUNTER_COMMAND and default command
                         context.SetCurrentCommand(START_COMMAND);
                         await _botClient.SendTextMessageAsync(context.ChatId, "Выберите действие:", replyMarkup: DEFAULT_KEYBOARD);
                     }
@@ -226,6 +222,11 @@ namespace CounterAssistant.Bot
             return new ReplyKeyboardMarkup(keyboard) { ResizeKeyboard = true };
         }
 
+        private async Task OnBackCommand(ChatContext context)
+        {
+            context.SetCurrentCommand(START_COMMAND);
+            await _botClient.SendTextMessageAsync(context.ChatId, "Выберите действие:", replyMarkup: DEFAULT_KEYBOARD);
+        }
         public void Dispose()
         {
             _botClient?.StopReceiving();

@@ -23,7 +23,7 @@ namespace CounterAssistant.API.HealthChecks
         {
             try
             {
-                var me = await _bot.GetMeAsync();
+                await _bot.GetMeAsync(cancellationToken);
                 return new HealthCheckResult(HealthStatus.Healthy);
             }
             catch(Exception ex)
