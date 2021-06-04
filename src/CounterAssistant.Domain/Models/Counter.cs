@@ -6,13 +6,12 @@ namespace CounterAssistant.Domain.Models
     {
         private readonly Guid _id;
         private readonly DateTime _createdAt;
+        private readonly bool _isManual;
 
         private string _title;
         private int _amount;
         private ushort _step;
         private DateTime? _lastModifiedAt;
-        private bool _isManual;
-
 
         public Counter(Guid id, string title, int amount, ushort step, DateTime createdAt, DateTime? lastModifiedAt, bool isManual)
         {

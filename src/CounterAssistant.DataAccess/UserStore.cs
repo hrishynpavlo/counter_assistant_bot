@@ -27,23 +27,28 @@ namespace CounterAssistant.DataAccess
         public async Task<User> GetUserAsync(int id)
         {
             var user = await _db.Find(x => x.Id == id).FirstOrDefaultAsync();
+
+            if(user == null)
+            {
+                _logger.LogWarning("user {id} wasn't found", id);
+            }
+
             return user?.ToDomain();
         }
 
         public async Task<List<User>> GetUsersById(IEnumerable<int> ids)
         {
-            var filter = new FilterDefinitionBuilder<UserDto>().In(x => x.Id, ids);
+            var filter = Builders<UserDto>.Filter.In(x => x.Id, ids);
             var users = await _db.Find(filter).ToListAsync();
             return users.Select(x => x.ToDomain()).ToList();
         }
 
         public async Task UpdateUserAsync(User user)
         {
-            var update = new UpdateDefinitionBuilder<UserDto>()
+            var update = Builders<UserDto>.Update
                 .Set(x => x.BotInfo.CreateCounterFlowInfo, user.BotInfo.CreateCounterFlowInfo)
                 .Set(x => x.BotInfo.LastCommand, user.BotInfo.LastCommand)
                 .Set(x => x.BotInfo.SelectedCounterId, user.BotInfo.SelectedCounterId);
-
 
             await _db.FindOneAndUpdateAsync(x => x.Id == user.TelegramId, update);
         }
