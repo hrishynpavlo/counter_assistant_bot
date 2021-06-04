@@ -46,7 +46,7 @@ namespace CounterAssistant.Bot
         public static ChatContext Restore(User user, Counter counter)
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
-            if (user.BotInfo == null) throw new ArgumentNullException(nameof(user.BotInfo));
+            if (user.BotInfo == null) throw new ArgumentNullException(nameof(user), "botInfo is required");
 
             return new ChatContext
             {

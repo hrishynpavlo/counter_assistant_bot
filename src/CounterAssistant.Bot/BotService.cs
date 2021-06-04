@@ -203,30 +203,25 @@ namespace CounterAssistant.Bot
             }
         }
 
-        private string GetCounterMessage(Counter counter)
+        private static string GetCounterMessage(Counter counter)
         {
             return $"<b>Счётчик:</b> {counter.Title.ToUpper()}\n<b>Значнение:</b> {counter.Amount}\n<b>Шаг:</b> {counter.Step}\n<b>Создан:</b> {counter.CreatedAt}\n<b>Обновлен последний раз:</b> {counter.LastModifiedAt}\n<b>Режим:</b> {(counter.IsManual ? "ручной" : "автоматический")}\n";
         }
 
-        private string GetCountersMessage(List<Counter> counters)
+        private static string GetCountersMessage(List<Counter> counters)
         {
             var sb = new StringBuilder();
             counters.ForEach(x => sb.AppendLine(GetCounterMessage(x)));
             return sb.ToString();
         }
 
-        private ReplyKeyboardMarkup GetCounterKeyboard(List<Counter> counters)
+        private static ReplyKeyboardMarkup GetCounterKeyboard(List<Counter> counters)
         {
             var keyboard = counters.SelectMany(c => new List<List<KeyboardButton>> { new List<KeyboardButton> { new KeyboardButton($"{c.Title} - {c.Amount}") } }).ToList();
             keyboard.AddNewLineButton(BACK_COMMAND);
             return new ReplyKeyboardMarkup(keyboard) { ResizeKeyboard = true };
         }
 
-        private async Task OnBackCommand(ChatContext context)
-        {
-            context.SetCurrentCommand(START_COMMAND);
-            await _botClient.SendTextMessageAsync(context.ChatId, "Выберите действие:", replyMarkup: DEFAULT_KEYBOARD);
-        }
         public void Dispose()
         {
             _botClient?.StopReceiving();
