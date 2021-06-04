@@ -83,5 +83,11 @@ namespace CounterAssistant.DataAccess
             var counter = await _db.Find(x => x.Id == id).FirstOrDefaultAsync();
             return counter?.ToDomain();
         }
+
+        public async Task RemoveAsync(Guid id)
+        {
+            var result = await _db.DeleteOneAsync(x => x.Id == id);
+            _logger.LogInformation("counter {id} {operation} deleted, the number of removed counters: {number}", id, result.IsAcknowledged ? "was" : "wasn't", result.DeletedCount);
+        }
     }
 }

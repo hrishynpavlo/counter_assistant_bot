@@ -5,6 +5,7 @@ using CounterAssistant.Domain.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -52,7 +53,8 @@ namespace CounterAssistant.Bot
                 },
                 new List<KeyboardButton>
                 {
-                    new KeyboardButton(RESET_COUNTER_COMMAND)
+                    new KeyboardButton(RESET_COUNTER_COMMAND),
+                    new KeyboardButton(REMOVE_COUNTER_COMMAND)
                 },
                 new List<KeyboardButton>
                 {
@@ -64,13 +66,14 @@ namespace CounterAssistant.Bot
 
         public BotService(ITelegramBotClient botClient, IContextProvider contextProvider, ICounterStore store, ILogger<BotService> logger, IMetricsRoot metrics)
         {
-            _botClient = botClient;
-            _contextProvider = contextProvider;
-            _store = store;
-            _logger = logger;
-            _metrics = metrics;
+            _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
+            _contextProvider = contextProvider ?? throw new ArgumentNullException(nameof(contextProvider));
+            _store = store ?? throw new ArgumentNullException(nameof(store));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
         }
 
+        [ExcludeFromCodeCoverage]
         public async Task StartAsync()
         {
             _botClient.OnMessage += OnMessageHandler;
@@ -85,6 +88,7 @@ namespace CounterAssistant.Bot
             _botClient.StartReceiving();
         }
 
+        [ExcludeFromCodeCoverage(Justification = "There is no way to create MessageEventArgs")]
         public async void OnMessageHandler(object sender, MessageEventArgs e)
         {
             if (e.Message.Text != null)
@@ -197,6 +201,16 @@ namespace CounterAssistant.Bot
                     {
                         context.SelectedCounter.Reset();
                         await _botClient.SendTextMessageAsync(context.ChatId, $"Значение счётчика <b>{context.SelectedCounter.Title}</b> успешно сброшено до 0.", parseMode: ParseMode.Html);
+                        break;
+                    }
+                    case REMOVE_COUNTER_COMMAND:
+                    {
+                        await _store.RemoveAsync(context.SelectedCounter.Id);
+                        var counterName = context.SelectedCounter.Title;
+                        context.ClearSelectedCounter();
+                        context.SetCurrentCommand(START_COMMAND);
+                        _metrics.Measure.Counter.Increment(BotMetrics.RemovedCounters);
+                        await _botClient.SendTextMessageAsync(context.ChatId, $"Счётчик <b>{counterName}</b> успешно удален. Выберите другой счётчик:", parseMode: ParseMode.Html, replyMarkup: DEFAULT_KEYBOARD);
                         break;
                     }
                     default:

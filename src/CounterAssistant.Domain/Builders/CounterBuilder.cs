@@ -10,6 +10,7 @@ namespace CounterAssistant.Domain.Builders
 
         public const string TitleArgKey = "name";
         public const string StepArgKey = "step";
+        public const ushort DefultStep = 1;
 
         public CounterBuilder WithName(string title)
         {
@@ -25,7 +26,7 @@ namespace CounterAssistant.Domain.Builders
 
         public Counter Build()
         {
-            return new Counter(_title, 0, _step ?? 1, true);
+            return new Counter(_title, 0, _step ?? DefultStep, true);
         }
 
         public Dictionary<string, object> GetArgs()

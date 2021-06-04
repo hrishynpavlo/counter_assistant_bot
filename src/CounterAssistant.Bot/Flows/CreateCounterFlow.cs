@@ -2,6 +2,7 @@
 using CounterAssistant.Domain.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CounterAssistant.Bot.Flows
 {
@@ -53,6 +54,7 @@ namespace CounterAssistant.Bot.Flows
             }
         }
 
+        [ExcludeFromCodeCoverage(Justification = "it's impossible to test expiration in unit tests")]
         public static CreateCounterFlow RestoreFromContext(User user)
         {
             if (user == null || user.BotInfo == null) throw new ArgumentNullException(nameof(user));

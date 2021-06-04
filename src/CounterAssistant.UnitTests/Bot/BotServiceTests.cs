@@ -6,6 +6,7 @@ using CounterAssistant.DataAccess;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -19,13 +20,14 @@ namespace CounterAssistant.UnitTests.Bot
         private Mock<IMetricsRoot> _metrics;
         private Mock<IContextProvider> _provider;
         private BotService _bot;
+        private Mock<IMeasureCounterMetrics> _counterMetric;
 
         [SetUp]
         public void Init()
         {
-            var counter = new Mock<IMeasureCounterMetrics>();
+            _counterMetric = new Mock<IMeasureCounterMetrics>();
             var measure = new Mock<IMeasureMetrics>();
-            measure.Setup(x => x.Counter).Returns(counter.Object);
+            measure.Setup(x => x.Counter).Returns(_counterMetric.Object);
             _metrics = new Mock<IMetricsRoot>();
             _metrics.Setup(x => x.Measure).Returns(measure.Object);
 
@@ -200,7 +202,7 @@ namespace CounterAssistant.UnitTests.Bot
 
         [TestCase(BotCommands.INCREMENT_COMMAND)]
         [TestCase(BotCommands.DECREMENT_COMMAND)]
-        public async Task HandleMessage_IncrementDecrement_SuccessTest(string command)
+        public async Task HandleMessage_IncrementDecrementCommand_SuccessTest(string command)
         {
             //ARRANGE
             var context = new ChatContext
@@ -243,6 +245,63 @@ namespace CounterAssistant.UnitTests.Bot
             //ASSERT
             Assert.AreEqual(0, context.SelectedCounter.Amount);
             Assert.Greater(context.SelectedCounter.LastModifiedAt, lastModifiedBeforeUpdate);
+        }
+
+        [Test]
+        public async Task HandleMessage_RemoveCounterCommand_SuccessTest()
+        {
+            //ARRANGE
+            var context = new ChatContext
+            {
+                ChatId = 1
+            };
+
+            context.SelectCounter(new Domain.Models.Counter("test", 0, 1, true));
+
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+
+            //ACT
+            await _bot.HandleMessage(CreateMessage(BotCommands.REMOVE_COUNTER_COMMAND));
+
+            //ASSERT
+            Assert.IsNull(context.SelectedCounter);
+            Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
+        }
+
+        [Test]
+        public void HandleMessage_CreateCounterFlowCompleted_DoesntThrowButCaptureTheError()
+        {
+            //ARRANGE
+            var user = new Domain.Models.User 
+            {
+                TelegramId = 1,
+                BotInfo = new Domain.Models.UserBotInfo
+                {
+                    ChatId = 1,
+                    LastCommand = BotCommands.CREATE_COUNTER_COMMAND,
+                    CreateCounterFlowInfo = new Domain.Models.CreateCounterFlowInfo 
+                    {
+                        State = CreateFlowSteps.Completed.ToString()
+                    }
+                }
+            };
+
+            var context = ChatContext.Restore(user, null);
+
+            var wasErrors = false;
+            _counterMetric.Setup(x => x.Increment(It.IsAny<CounterOptions>())).Callback(() =>
+            {
+                wasErrors = true;
+            });
+
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+
+            //ACT
+            var act = new AsyncTestDelegate(async() => await _bot.HandleMessage(CreateMessage("test")));
+
+            //ASSERT
+            Assert.DoesNotThrowAsync(act);
+            Assert.IsTrue(wasErrors);
         }
 
         private static Message CreateMessage(string text, int id = 1)

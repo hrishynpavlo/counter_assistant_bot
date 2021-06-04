@@ -28,5 +28,11 @@ namespace CounterAssistant.Bot
             Name = "bot_cached_chat_contexts",
             MeasurementUnit = Unit.Items
         };
+
+        public static CounterOptions RemovedCounters => new CounterOptions 
+        {
+            Name = "bot_removed_counters",
+            MeasurementUnit = Unit.Commands
+        };
     }
 }
