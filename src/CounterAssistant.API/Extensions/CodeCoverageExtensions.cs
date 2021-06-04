@@ -7,15 +7,7 @@ namespace CounterAssistant.API.Extensions
 {
     public static class CodeCoverageExtensions
     {
-        private readonly static string Report = "No data";
-
-        static CodeCoverageExtensions()
-        {
-            if (File.Exists("Summary.txt"))
-            {
-                Report = File.ReadAllText("Summary.txt");
-            }
-        }
+        private readonly static string Report = File.Exists("Summary.txt") ? File.ReadAllText("Summary.txt") : "No data";
 
         public static void MapCodeCoverage(this IEndpointRouteBuilder endpoint, string path = "/code-coverage")
         {
