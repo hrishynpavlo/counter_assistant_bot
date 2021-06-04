@@ -7,8 +7,9 @@ namespace CounterAssistant.Bot.Flows
 {
     public class CreateCounterFlow 
     {
+        private readonly CounterBuilder _builder;
+
         private CreateFlowSteps _currentStep;
-        private CounterBuilder _builder;
 
         public CreateFlowSteps State => _currentStep;
         public Dictionary<string, object> Args => _builder.GetArgs();
@@ -44,7 +45,7 @@ namespace CounterAssistant.Bot.Flows
                         var counter = _builder.Build();
                         return new CreateCounterResult { IsSuccess = true, Counter = counter, Message = $"Счётчик <b>{counter.Title.ToUpper()}</b> успешно создан" };
                     }
-                default: throw new Exception();
+                default: throw new FlowException(nameof(CreateCounterFlow), $"Step {_currentStep} is not supported");
             }
         }
 
