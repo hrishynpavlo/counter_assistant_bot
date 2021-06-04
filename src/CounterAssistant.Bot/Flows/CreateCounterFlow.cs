@@ -39,7 +39,11 @@ namespace CounterAssistant.Bot.Flows
                     }
                 case CreateFlowSteps.SetCounterStep:
                     {
-                        var step = ushort.Parse(message);
+                        if(!ushort.TryParse(message, out var step))
+                        {
+                            throw new FlowException(nameof(CreateCounterFlow), $"step {step} has to be greater than {ushort.MinValue} and less or equal than {ushort.MaxValue}");
+                        }
+
                         _builder.WithStep(step);
                         _currentStep = CreateFlowSteps.Completed;
                         var counter = _builder.Build();
@@ -67,12 +71,12 @@ namespace CounterAssistant.Bot.Flows
 
             if(user.BotInfo.CreateCounterFlowInfo.Args != null)
             {
-                if (user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue("step", out var counterStep))
+                if (user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue(CounterBuilder.StepArgKey, out var counterStep))
                 {
                     builder.WithStep((ushort)counterStep);
                 }
 
-                if (user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue("name", out var counterName))
+                if (user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue(CounterBuilder.TitleArgKey, out var counterName))
                 {
                     builder.WithName((string)counterName);
                 }

@@ -4,10 +4,12 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Filters;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace CounterAssistant.API
 {
+    [ExcludeFromCodeCoverage]
     public class Program
     {
         public static void Main(string[] args)

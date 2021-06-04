@@ -1,9 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CounterAssistant.API.Controllers
 {
@@ -22,7 +18,11 @@ namespace CounterAssistant.API.Controllers
         public IActionResult GetVersion()
         {
             _logger.LogInformation("Called method {method}", nameof(GetVersion));
-            return Ok(new { version = "v1-beta" });
+            return Ok(new 
+            { 
+                version = AppSettings.AppVersion,
+                commitHash = AppSettings.CommitHahs
+            });
         }
     }
 }

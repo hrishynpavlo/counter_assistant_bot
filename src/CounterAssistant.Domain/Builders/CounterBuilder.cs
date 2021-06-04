@@ -8,6 +8,9 @@ namespace CounterAssistant.Domain.Builders
         private string _title;
         private ushort? _step;
 
+        public const string TitleArgKey = "name";
+        public const string StepArgKey = "step";
+
         public CounterBuilder WithName(string title)
         {
             _title = title;
@@ -29,8 +32,8 @@ namespace CounterAssistant.Domain.Builders
         {
             var args = new Dictionary<string, object>();
 
-            if (!string.IsNullOrWhiteSpace(_title)) args["name"] = _title;
-            if (_step.HasValue) args["step"] = _step.Value;
+            if (!string.IsNullOrWhiteSpace(_title)) args[TitleArgKey] = _title;
+            if (_step.HasValue) args[StepArgKey] = _step.Value;
 
             return args;
         }
