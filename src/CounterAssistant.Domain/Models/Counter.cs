@@ -59,14 +59,6 @@ namespace CounterAssistant.Domain.Models
             _title = title;
         }
 
-        public void Update(int amount, ushort step, string title)
-        {
-            _title = title;
-            _amount = amount;
-            _step = step;
-            _lastModifiedAt = DateTime.UtcNow;
-        }
-
         public void Reset()
         {
             _amount = 0;

@@ -36,6 +36,12 @@ namespace CounterAssistant.UnitTests.Domains
             counter.Reset();
             Assert.Greater(counter.LastModifiedAt, lastModifiedAtStart);
             Assert.IsTrue(counter.Amount == 0);
+
+            var newName = "newName";
+            lastModifiedAtStart = counter.LastModifiedAt;
+            counter.Rename(newName);
+            Assert.AreEqual(newName, counter.Title);
+            Assert.AreEqual(lastModifiedAtStart, counter.LastModifiedAt);
         }
     }
 }
