@@ -35,7 +35,7 @@ namespace CounterAssistant.Bot
 
         public async Task<ChatContext> GetContextAsync(Message message)
         {
-            if (message == null) throw new ArgumentNullException(nameof(message));
+            ValidateMessage(message);
 
             var userId = message.From.Id;
 
@@ -64,6 +64,11 @@ namespace CounterAssistant.Bot
             });
 
             return context;
+        }
+
+        private static void ValidateMessage(Message message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
         }
 
         private async void OnDelete(object key, object value, EvictionReason reason, object state)
