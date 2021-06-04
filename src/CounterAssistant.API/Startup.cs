@@ -16,11 +16,13 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Quartz;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Telegram.Bot;
 
 namespace CounterAssistant.API
 {
+    [ExcludeFromCodeCoverage]
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -124,7 +126,8 @@ namespace CounterAssistant.API
                 {
                     options.GlobalTags["env"] = appSettings.Environment;
                     options.GlobalTags["server"] = appSettings.Server;
-                    options.GlobalTags["app"] = appSettings.AppName;
+                    options.GlobalTags["app"] = AppSettings.AppName;
+                    options.GlobalTags["commit_hash"] = AppSettings.CommitHahs;
                 })
                 .OutputMetrics
                 .AsPrometheusPlainText()
