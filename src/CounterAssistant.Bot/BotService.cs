@@ -22,7 +22,7 @@ namespace CounterAssistant.Bot
     {
         private readonly ITelegramBotClient _botClient;
         private readonly IContextProvider _contextProvider;
-        private readonly ICounterStore _store;
+        private readonly ICounterService _counterService;
         private readonly ILogger<BotService> _logger;
         private readonly IMetricsRoot _metrics;
 
@@ -64,11 +64,11 @@ namespace CounterAssistant.Bot
             ResizeKeyboard = true
         };
 
-        public BotService(ITelegramBotClient botClient, IContextProvider contextProvider, ICounterStore store, ILogger<BotService> logger, IMetricsRoot metrics)
+        public BotService(ITelegramBotClient botClient, IContextProvider contextProvider, ICounterService counterService, ILogger<BotService> logger, IMetricsRoot metrics)
         {
             _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             _contextProvider = contextProvider ?? throw new ArgumentNullException(nameof(contextProvider));
-            _store = store ?? throw new ArgumentNullException(nameof(store));
+            _counterService = counterService ?? throw new ArgumentNullException(nameof(counterService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
         }
@@ -133,10 +133,10 @@ namespace CounterAssistant.Bot
                             context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
                             context.FinishCreateCounterFlow();
 
-                            await _store.CreateCounterAsync(result.Counter, context.UserId);
+                            await _counterService.CreateAsync(result.Counter, context.UserId);
                             _logger.LogInformation("user {user} has successfully created counter {id}", context.UserId, result.Counter.Id);
 
-                            var counters = await _store.GetCountersByUserIdAsync(context.UserId);
+                            var counters = await _counterService.GetUserCountersAsync(context.UserId);
 
                             await _botClient.SendTextMessageAsync(context.ChatId, result.Message, parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
                         }
@@ -150,7 +150,7 @@ namespace CounterAssistant.Bot
                     }
                     case DISPLAY_ALL_COUNTERS_COMMAND:
                     {
-                        var counters = await _store.GetCountersByUserIdAsync(context.UserId);
+                        var counters = await _counterService.GetUserCountersAsync(context.UserId);
                         context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
                         await _botClient.SendTextMessageAsync(context.ChatId, text: "Ваши счётчики: \n\n" + GetCountersMessage(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
                         break;
@@ -159,10 +159,10 @@ namespace CounterAssistant.Bot
                     {
                         context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
 
-                        await _store.UpdateAsync(context.SelectedCounter);
+                        await _counterService.UpdateAmountAsync(context.SelectedCounter);
                         context.ClearSelectedCounter();
 
-                        var counters = await _store.GetCountersByUserIdAsync(context.UserId);
+                        var counters = await _counterService.GetUserCountersAsync(context.UserId);
                         await _botClient.SendTextMessageAsync(context.ChatId, text: "Выберите счётчик: " , parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
 
                         break;
@@ -177,7 +177,7 @@ namespace CounterAssistant.Bot
                     case not null when context.Command == SELECT_COUNTER_COMMAND:
                     {
                         var counterName = message.Substring(0, message.IndexOf(" -"));
-                        var counter = await _store.GetCounterByNameAsync(context.UserId, counterName);
+                        var counter = await _counterService.GetCounterByBotRequstAsync(context.UserId, counterName);
                         context.SelectCounter(counter);
 
                         context.SetCurrentCommand(MANAGE_COUNTER_COMMAND);
@@ -205,7 +205,7 @@ namespace CounterAssistant.Bot
                     }
                     case REMOVE_COUNTER_COMMAND:
                     {
-                        await _store.RemoveAsync(context.SelectedCounter.Id);
+                        await _counterService.RemoveAsync(context.SelectedCounter.Id);
                         var counterName = context.SelectedCounter.Title;
                         context.ClearSelectedCounter();
                         context.SetCurrentCommand(START_COMMAND);

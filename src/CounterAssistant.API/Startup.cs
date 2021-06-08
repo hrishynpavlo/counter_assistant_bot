@@ -79,7 +79,6 @@ namespace CounterAssistant.API
             });
 
             services.AddSingleton<IUserStore, UserStore>();
-            services.AddSingleton<ICounterStore, CounterStore>();
 
             services.AddSingleton<ContextProviderSettings>(_ => new ContextProviderSettings 
             { 
@@ -147,7 +146,9 @@ namespace CounterAssistant.API
             services.AddHealthChecks()
                 .AddMongoDb(appSettings.MongoHost, tags: new[] { "database", "mongodb" })
                 .AddTelegramBot();
-            
+
+            services.AddSingleton(typeof(IAsyncRepository<>), typeof(AsyncRepository<>));
+            services.AddSingleton<ICounterService, CounterService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

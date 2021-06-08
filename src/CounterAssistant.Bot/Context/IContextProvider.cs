@@ -18,15 +18,15 @@ namespace CounterAssistant.Bot
     {
         private readonly IMemoryCache _cache;
         private readonly IUserStore _userStore;
-        private readonly ICounterStore _counterStore;
+        private readonly ICounterService _counterService;
         private readonly ContextProviderSettings _settings;
         private readonly IMetricsRoot _metrics;
         private readonly ILogger<InMemoryContextProvider> _logger;
 
-        public InMemoryContextProvider(IUserStore userStore, ICounterStore counterStore, IMemoryCache cache, ContextProviderSettings settings, IMetricsRoot metrics, ILogger<InMemoryContextProvider> logger)
+        public InMemoryContextProvider(IUserStore userStore, ICounterService counterService, IMemoryCache cache, ContextProviderSettings settings, IMetricsRoot metrics, ILogger<InMemoryContextProvider> logger)
         {
             _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
-            _counterStore = counterStore ?? throw new ArgumentNullException(nameof(counterStore));
+            _counterService = counterService ?? throw new ArgumentNullException(nameof(counterService));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
@@ -57,7 +57,7 @@ namespace CounterAssistant.Bot
 
                 if (user.BotInfo.SelectedCounterId.HasValue)
                 {
-                    counter = await _counterStore.GetCounterAsync(user.BotInfo.SelectedCounterId.Value);
+                    counter = await _counterService.GetCounterByIdAsync(user.BotInfo.SelectedCounterId.Value);
                 }
                 _metrics.Measure.Counter.Increment(BotMetrics.CachedContext);
                 return ChatContext.Restore(user, counter);

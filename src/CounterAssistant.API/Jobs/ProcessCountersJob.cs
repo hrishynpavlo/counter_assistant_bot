@@ -14,7 +14,7 @@ namespace CounterAssistant.API.Jobs
     [DisallowConcurrentExecution]
     public class ProcessCountersJob : IJob
     {
-        private readonly ICounterStore _counterStore;
+        private readonly ICounterService _counterService;
         private readonly ITelegramBotClient _botClient;
         private readonly IUserStore _userStore;
         private readonly ILogger<ProcessCountersJob> _logger;
@@ -22,9 +22,9 @@ namespace CounterAssistant.API.Jobs
 
         private readonly static MetricTags Tag = new MetricTags("job_name", "process_counter");
 
-        public ProcessCountersJob(ICounterStore counterStore, ITelegramBotClient botClient, IUserStore userStore, ILogger<ProcessCountersJob> logger, IMetricsRoot metrics)
+        public ProcessCountersJob(ICounterService counterService, ITelegramBotClient botClient, IUserStore userStore, ILogger<ProcessCountersJob> logger, IMetricsRoot metrics)
         {
-            _counterStore = counterStore ?? throw new ArgumentNullException(nameof(counterStore));
+            _counterService = counterService ?? throw new ArgumentNullException(nameof(counterService));
             _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -37,30 +37,28 @@ namespace CounterAssistant.API.Jobs
 
             try
             {
-                var counters = await _counterStore.GetCountersAsync();
-                var userIds = counters.Select(x => x.UserId).Distinct().ToArray();
-                var users = (await _userStore.GetUsersById(userIds)).ToDictionary(x => x.TelegramId);
+                var counters = await _counterService.GetCountersForDailyUpdateAsync();
+                var users = (await _userStore.GetUsersById(counters.Keys)).ToDictionary(x => x.TelegramId);
 
-                foreach (var group in counters.GroupBy(c => c.UserId))
+                foreach(var group in counters)
                 {
-                    if(!users.TryGetValue(group.Key, out var user))
+                    if (!users.TryGetValue(group.Key, out var user))
                     {
                         _logger.LogWarning("Couldn't find user {userId}", group.Key);
                         continue;
                     }
 
                     var message = new StringBuilder();
-                    var domains = group.Select(x => x.ToDomain()).ToArray();
 
-                    foreach (var domain in domains)
+                    foreach(var counter in group.Value)
                     {
-                        domain.Increment();
+                        counter.Increment();
 
-                        _logger.LogInformation("Counter {counterId} proccesed in background job {job} for user {userId}", domain.Id, nameof(ProcessCountersJob), user.TelegramId);
-                        message.AppendLine($"Счётчик <b>{domain.Title.ToUpper()}</b> автоматически увеличен на <b>{domain.Step}</b>.\n<b>{domain.Title.ToUpper()}: {domain.Amount}</b>\n");
+                        _logger.LogInformation("Counter {counterId} proccesed in background job {job} for user {userId}", counter.Id, nameof(ProcessCountersJob), user.TelegramId);
+                        message.AppendLine($"Счётчик <b>{counter.Title.ToUpper()}</b> автоматически увеличен на <b>{counter.Step}</b>.\n<b>{counter.Title.ToUpper()}: {counter.Amount}</b>\n");
                     }
 
-                    await _counterStore.UpdateManyAsync(domains);
+                    await _counterService.BulkUpdateAmountAsync(group.Value);
                     await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
                 }
 

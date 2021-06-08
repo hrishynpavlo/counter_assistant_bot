@@ -18,7 +18,7 @@ namespace CounterAssistant.UnitTests.Bot
     public class InMemoryChatContextProviderTests
     {
         private Mock<IUserStore> _userStore;
-        private Mock<ICounterStore> _counterStore;
+        private Mock<ICounterService> _counterStore;
         private Mock<IMemoryCache> _cache;
         private Mock<IMetricsRoot> _metrics;
         private Mock<ILogger<InMemoryContextProvider>> _logger;
@@ -33,7 +33,7 @@ namespace CounterAssistant.UnitTests.Bot
         public void Init()
         {
             _userStore = new Mock<IUserStore>();
-            _counterStore = new Mock<ICounterStore>();
+            _counterStore = new Mock<ICounterService>();
             _cache = new Mock<IMemoryCache>();
             _metrics = new Mock<IMetricsRoot>();
 

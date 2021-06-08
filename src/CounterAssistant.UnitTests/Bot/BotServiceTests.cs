@@ -31,9 +31,9 @@ namespace CounterAssistant.UnitTests.Bot
             _metrics = new Mock<IMetricsRoot>();
             _metrics.Setup(x => x.Measure).Returns(measure.Object);
 
-            var counterStore = new Mock<ICounterStore>();
-            counterStore.Setup(x => x.GetCountersByUserIdAsync(It.IsAny<int>())).ReturnsAsync(new List<Domain.Models.Counter>());
-            counterStore.Setup(x => x.GetCounterByNameAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(new Domain.Models.Counter("test", 1, 1, true));
+            var counterStore = new Mock<ICounterService>();
+            counterStore.Setup(x => x.GetUserCountersAsync(It.IsAny<int>())).ReturnsAsync(new List<Domain.Models.Counter>());
+            counterStore.Setup(x => x.GetCounterByBotRequstAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(new Domain.Models.Counter("test", 1, 1, true));
 
             var logger = new Mock<ILogger<BotService>>();
             var botClient = new Mock<ITelegramBotClient>();
