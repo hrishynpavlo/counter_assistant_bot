@@ -26,7 +26,7 @@ namespace CounterAssistant.Domain.Builders
 
         public Counter Build()
         {
-            return new Counter(_title, 0, _step ?? DefultStep, true);
+            return new Counter(_title, 0, _step ?? DefultStep, false);
         }
 
         public Dictionary<string, object> GetArgs()
