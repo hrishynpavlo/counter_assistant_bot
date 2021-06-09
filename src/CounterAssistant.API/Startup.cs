@@ -78,8 +78,6 @@ namespace CounterAssistant.API
                 return collection;
             });
 
-            services.AddSingleton<IUserStore, UserStore>();
-
             services.AddSingleton<ContextProviderSettings>(_ => new ContextProviderSettings 
             { 
                 ExpirationTime = appSettings.CacheExpirationTime,
@@ -149,6 +147,7 @@ namespace CounterAssistant.API
 
             services.AddSingleton(typeof(IAsyncRepository<>), typeof(AsyncRepository<>));
             services.AddSingleton<ICounterService, CounterService>();
+            services.AddSingleton<IUserService, UserService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

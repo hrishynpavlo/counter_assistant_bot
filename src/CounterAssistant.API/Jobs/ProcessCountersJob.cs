@@ -16,17 +16,17 @@ namespace CounterAssistant.API.Jobs
     {
         private readonly ICounterService _counterService;
         private readonly ITelegramBotClient _botClient;
-        private readonly IUserStore _userStore;
+        private readonly IUserService _userService;
         private readonly ILogger<ProcessCountersJob> _logger;
         private readonly IMetricsRoot _metrics;
 
         private readonly static MetricTags Tag = new MetricTags("job_name", "process_counter");
 
-        public ProcessCountersJob(ICounterService counterService, ITelegramBotClient botClient, IUserStore userStore, ILogger<ProcessCountersJob> logger, IMetricsRoot metrics)
+        public ProcessCountersJob(ICounterService counterService, ITelegramBotClient botClient, IUserService userService, ILogger<ProcessCountersJob> logger, IMetricsRoot metrics)
         {
             _counterService = counterService ?? throw new ArgumentNullException(nameof(counterService));
             _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
-            _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
         }
@@ -38,7 +38,7 @@ namespace CounterAssistant.API.Jobs
             try
             {
                 var counters = await _counterService.GetCountersForDailyUpdateAsync();
-                var users = (await _userStore.GetUsersById(counters.Keys)).ToDictionary(x => x.TelegramId);
+                var users = await _userService.GetUsersByIdsAsync(counters.Keys);
 
                 foreach(var group in counters)
                 {

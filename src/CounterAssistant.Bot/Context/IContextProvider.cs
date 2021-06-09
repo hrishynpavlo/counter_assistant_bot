@@ -17,15 +17,15 @@ namespace CounterAssistant.Bot
     public class InMemoryContextProvider : IContextProvider
     {
         private readonly IMemoryCache _cache;
-        private readonly IUserStore _userStore;
+        private readonly IUserService _userService;
         private readonly ICounterService _counterService;
         private readonly ContextProviderSettings _settings;
         private readonly IMetricsRoot _metrics;
         private readonly ILogger<InMemoryContextProvider> _logger;
 
-        public InMemoryContextProvider(IUserStore userStore, ICounterService counterService, IMemoryCache cache, ContextProviderSettings settings, IMetricsRoot metrics, ILogger<InMemoryContextProvider> logger)
+        public InMemoryContextProvider(IUserService userService, ICounterService counterService, IMemoryCache cache, ContextProviderSettings settings, IMetricsRoot metrics, ILogger<InMemoryContextProvider> logger)
         {
-            _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _counterService = counterService ?? throw new ArgumentNullException(nameof(counterService));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -45,12 +45,12 @@ namespace CounterAssistant.Bot
                 cacheOptions.AbsoluteExpirationRelativeToNow = _settings.ExpirationTime;
                 cacheOptions.SlidingExpiration = _settings.ProlongationTime;
                 
-                var user = await _userStore.GetUserAsync(userId);
+                var user = await _userService.GetUserByIdAsync(userId);
 
                 if(user == null)
                 {
                     user = Domain.Models.User.Default(userId, message.Chat.Id, message.From.FirstName, message.From.LastName, message.From.Username, BotCommands.START_COMMAND);
-                    await _userStore.CreateUserAsync(user);
+                    await _userService.CreateAsync(user);
                 }
 
                 Counter counter = null;
@@ -79,18 +79,14 @@ namespace CounterAssistant.Bot
 
                 if(value is ChatContext context)
                 {
-                    await _userStore.UpdateUserAsync(new Domain.Models.User
+                    await _userService.UpdateUserChatInfoAsync(context.UserId, new UserBotInfo
                     {
-                        TelegramId = context.UserId,
-                        BotInfo = new UserBotInfo
+                        LastCommand = context.Command,
+                        SelectedCounterId = context.SelectedCounter?.Id,
+                        CreateCounterFlowInfo = new CreateCounterFlowInfo
                         {
-                            LastCommand = context.Command,
-                            SelectedCounterId = context.SelectedCounter?.Id,
-                            CreateCounterFlowInfo = new CreateCounterFlowInfo 
-                            { 
-                                State = context.CreateCounterFlow?.State.ToString(), 
-                                Args = context.CreateCounterFlow?.Args 
-                            }
+                            State = context.CreateCounterFlow?.State.ToString(),
+                            Args = context.CreateCounterFlow?.Args
                         }
                     });
 

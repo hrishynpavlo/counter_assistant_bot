@@ -17,7 +17,7 @@ namespace CounterAssistant.UnitTests.Bot
     [TestFixture]
     public class InMemoryChatContextProviderTests
     {
-        private Mock<IUserStore> _userStore;
+        private Mock<IUserService> _userService;
         private Mock<ICounterService> _counterStore;
         private Mock<IMemoryCache> _cache;
         private Mock<IMetricsRoot> _metrics;
@@ -32,7 +32,7 @@ namespace CounterAssistant.UnitTests.Bot
         [SetUp]
         public void Init()
         {
-            _userStore = new Mock<IUserStore>();
+            _userService = new Mock<IUserService>();
             _counterStore = new Mock<ICounterService>();
             _cache = new Mock<IMemoryCache>();
             _metrics = new Mock<IMetricsRoot>();
@@ -49,7 +49,7 @@ namespace CounterAssistant.UnitTests.Bot
         public void GetContext_NullMessage_ThrowsArgumentNullException()
         {
             //ARRANGE
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, _cache.Object, _settings, _metrics.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, _cache.Object, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var act = new AsyncTestDelegate(async () => await contextProvider.GetContextAsync(null));
@@ -80,7 +80,7 @@ namespace CounterAssistant.UnitTests.Bot
             var cache = new MemoryCache(new MemoryCacheOptions());
             cache.Set(message.From.Id, context);
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var result = await contextProvider.GetContextAsync(message);
@@ -121,9 +121,9 @@ namespace CounterAssistant.UnitTests.Bot
             };
 
             var cache = new MemoryCache(new MemoryCacheOptions());
-            _userStore.Setup(x => x.GetUserAsync(It.IsAny<int>())).ReturnsAsync(user);
+            _userService.Setup(x => x.GetUserByIdAsync(It.IsAny<int>())).ReturnsAsync(user);
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var context = await contextProvider.GetContextAsync(message);
@@ -159,7 +159,7 @@ namespace CounterAssistant.UnitTests.Bot
 
             var cache = new MemoryCache(new MemoryCacheOptions());
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var context = await contextProvider.GetContextAsync(message);

@@ -62,14 +62,15 @@ namespace CounterAssistant.UnitTests.Jobs
                 [user2.TelegramId] = new[] { counter2_1, counter2_2 }
             };
 
-            var users = new List<Domain.Models.User> 
+            var users = new Dictionary<int, Domain.Models.User>
             {
-                user1, user2
+                [user1.TelegramId] = user1,
+                [user2.TelegramId] = user2
             };
 
             var counterService = new Mock<ICounterService>();
             var bot = new Mock<ITelegramBotClient>();
-            var userStore = new Mock<IUserStore>();
+            var userService = new Mock<IUserService>();
 
             var numberOfUpdatedCountes = 0;
             counterService.Setup(x => x.GetCountersForDailyUpdateAsync()).ReturnsAsync(counters);
@@ -84,7 +85,7 @@ namespace CounterAssistant.UnitTests.Jobs
                     return Task.CompletedTask;
                 });
 
-            userStore.Setup(x => x.GetUsersById(It.IsAny<IEnumerable<int>>())).ReturnsAsync(users);
+            userService.Setup(x => x.GetUsersByIdsAsync(It.IsAny<IEnumerable<int>>())).ReturnsAsync(users);
 
             var chatIds = new HashSet<long>();
             bot.Setup(x => x.SendTextMessageAsync(It.IsAny<ChatId>(), It.IsAny<string>(), It.IsAny<ParseMode>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<IReplyMarkup>(), It.IsAny<CancellationToken>()))
@@ -94,7 +95,7 @@ namespace CounterAssistant.UnitTests.Jobs
                     return Task.FromResult(new Message()); 
                 });
 
-            var job = new ProcessCountersJob(counterService.Object, bot.Object, userStore.Object, Logger.Object, Metrics.Object);
+            var job = new ProcessCountersJob(counterService.Object, bot.Object, userService.Object, Logger.Object, Metrics.Object);
 
             //ACT
             AsyncTestDelegate act = async() => await job.Execute(JobContext.Object);
@@ -131,10 +132,10 @@ namespace CounterAssistant.UnitTests.Jobs
                    return new Message(); 
                });
 
-            var userStore = new Mock<IUserStore>();
-            userStore.Setup(x => x.GetUsersById(It.IsAny<IEnumerable<int>>())).ReturnsAsync(new List<Domain.Models.User>());
+            var userService = new Mock<IUserService>();
+            userService.Setup(x => x.GetUsersByIdsAsync(It.IsAny<IEnumerable<int>>())).ReturnsAsync(new Dictionary<int, Domain.Models.User>());
 
-            var job = new ProcessCountersJob(counterService.Object, bot.Object, userStore.Object, Logger.Object, Metrics.Object);
+            var job = new ProcessCountersJob(counterService.Object, bot.Object, userService.Object, Logger.Object, Metrics.Object);
 
             //ACT
             AsyncTestDelegate act = async () => await job.Execute(JobContext.Object);
