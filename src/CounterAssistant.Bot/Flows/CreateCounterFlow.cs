@@ -1,13 +1,21 @@
-﻿using CounterAssistant.Domain.Builders;
+﻿using CounterAssistant.Bot.Extensions;
+using CounterAssistant.Domain.Builders;
 using CounterAssistant.Domain.Models;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CounterAssistant.Bot.Flows
 {
     public class CreateCounterFlow 
     {
+        private readonly static Dictionary<CounterType, string> _types = new Dictionary<CounterType, string> 
+        {
+            [CounterType.Automatic] = "Автоматический",
+            [CounterType.Manual] = "Ручной"
+        };
+
         private readonly CounterBuilder _builder;
 
         private CreateFlowSteps _currentStep;
@@ -46,6 +54,26 @@ namespace CounterAssistant.Bot.Flows
                         }
 
                         _builder.WithStep(step);
+                        _currentStep = CreateFlowSteps.SetCounterType;
+
+                        return new CreateCounterResult { IsSuccess = false, Message = "Выберите тип обновления для счётчика: ", Buttons = _types.ToDictionary(x => x.Key.ToString(), v => v.Value).ToInlineButtons() };
+                    } 
+                case CreateFlowSteps.SetCounterType:
+                    {
+                        if(!Enum.TryParse<CounterType>(message, ignoreCase: true, out var type) || !_types.ContainsKey(type))
+                        {
+                            throw new FlowException(nameof(CreateCounterFlow), $"{message} is not supported type");
+                        }
+
+                        var isManual = type switch
+                        {
+                            CounterType.Automatic => false,
+                            CounterType.Manual => true,
+                            _ => throw new ArgumentOutOfRangeException(nameof(type))
+                        };
+
+                        _builder.WithType(isManual);
+
                         _currentStep = CreateFlowSteps.Completed;
                         var counter = _builder.Build();
                         return new CreateCounterResult { IsSuccess = true, Counter = counter, Message = $"Счётчик <b>{counter.Title.ToUpper()}</b> успешно создан" };
@@ -54,7 +82,6 @@ namespace CounterAssistant.Bot.Flows
             }
         }
 
-        [ExcludeFromCodeCoverage(Justification = "it's impossible to test expiration in unit tests")]
         public static CreateCounterFlow RestoreFromContext(User user)
         {
             if (user == null || user.BotInfo == null) throw new ArgumentNullException(nameof(user));
@@ -82,6 +109,11 @@ namespace CounterAssistant.Bot.Flows
                 {
                     builder.WithName((string)counterName);
                 }
+
+                if(user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue(CounterBuilder.IsManualArgKey, out var counterType))
+                {
+                    builder.WithType((bool)counterType);
+                }
             }
 
             return new CreateCounterFlow(step, builder);
@@ -92,6 +124,7 @@ namespace CounterAssistant.Bot.Flows
     {
         public bool IsSuccess { get; set; }
         public string Message { get; set; }
+        public IReplyMarkup Buttons { get; set; }
         public Counter Counter { get; set; }
     }
 
@@ -100,6 +133,13 @@ namespace CounterAssistant.Bot.Flows
         None,
         SetCounterName,
         SetCounterStep,
+        SetCounterType,
         Completed
+    }
+
+    public enum CounterType
+    {
+        Automatic,
+        Manual
     }
 }

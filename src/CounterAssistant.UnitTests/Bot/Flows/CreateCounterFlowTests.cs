@@ -66,6 +66,14 @@ namespace CounterAssistant.UnitTests.Bot.Flows
             //step3: set counter step
             var counterStep = 1;
             result = flow.Perform(counterStep.ToString());
+            Assert.AreEqual(CreateFlowSteps.SetCounterType, flow.State);
+            Assert.IsFalse(result.IsSuccess);
+            Assert.AreEqual(2, flow.Args.Count);
+            Assert.IsNotNull(result.Buttons);
+
+            //step4: set counter type
+            var counterType = CounterType.Automatic;
+            result = flow.Perform(counterType.ToString());
             Assert.AreEqual(CreateFlowSteps.Completed, flow.State);
             Assert.IsTrue(result.IsSuccess);
             Assert.IsFalse(string.IsNullOrWhiteSpace(result.Message));

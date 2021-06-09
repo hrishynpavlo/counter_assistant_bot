@@ -7,10 +7,13 @@ namespace CounterAssistant.Domain.Builders
     {
         private string _title;
         private ushort? _step;
+        private bool? _isManual;
 
         public const string TitleArgKey = "name";
         public const string StepArgKey = "step";
+        public const string IsManualArgKey = "isManual";
         public const ushort DefultStep = 1;
+        public const bool DefaultIsManual = false;
 
         public CounterBuilder WithName(string title)
         {
@@ -24,9 +27,24 @@ namespace CounterAssistant.Domain.Builders
             return this;
         }
 
+        public CounterBuilder WithType(bool isManual)
+        {
+            _isManual = isManual;
+            return this;
+        }
+
         public Counter Build()
         {
-            return new Counter(_title, 0, _step ?? DefultStep, false);
+            try
+            {
+                var counter = new Counter(_title, 0, _step ?? DefultStep, _isManual ?? DefaultIsManual);
+                Reset();
+                return counter;
+            }
+            catch
+            {
+                throw;
+            }
         }
 
         public Dictionary<string, object> GetArgs()
@@ -35,10 +53,18 @@ namespace CounterAssistant.Domain.Builders
 
             if (!string.IsNullOrWhiteSpace(_title)) args[TitleArgKey] = _title;
             if (_step.HasValue) args[StepArgKey] = _step.Value;
+            if (_isManual.HasValue) args[IsManualArgKey] = _isManual.Value;
 
             return args;
         }
 
         public static CounterBuilder Default => new CounterBuilder();
+
+        private void Reset()
+        {
+            _title = string.Empty;
+            _step = null;
+            _isManual = null;
+        }
     }
 }

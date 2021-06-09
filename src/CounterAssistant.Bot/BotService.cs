@@ -77,6 +77,7 @@ namespace CounterAssistant.Bot
         public async Task StartAsync()
         {
             _botClient.OnMessage += OnMessageHandler;
+            _botClient.OnCallbackQuery += OnCallbackQueryHandler;
 
             var commands = new[]
             {
@@ -93,16 +94,27 @@ namespace CounterAssistant.Bot
         {
             if (e.Message.Text != null)
             {
-                await HandleMessage(e.Message);
+                var request = BotRequest.FromMessage(e.Message);
+                await HandleRequest(request);
             }
         }
 
-        public async Task HandleMessage(Message Message)
+        [ExcludeFromCodeCoverage(Justification = "There is no way to create CallbackQueryEventArgs")]
+        public async void OnCallbackQueryHandler(object sender, CallbackQueryEventArgs e)
+        {
+            if (e.CallbackQuery.Data != null)
+            {
+                var request = BotRequest.FromCallback(e.CallbackQuery);
+                await HandleRequest(request);
+            }
+        }
+
+        public async Task HandleRequest(BotRequest request)
         {
             _metrics.Measure.Counter.Increment(BotMetrics.RecievedMessages);
 
-            var context = await _contextProvider.GetContextAsync(Message);
-            var message = Message.Text;
+            var context = await _contextProvider.GetContextAsync(request);
+            var message = request.Text;
 
             try
             {
@@ -126,7 +138,7 @@ namespace CounterAssistant.Bot
 
                         if (!result.IsSuccess)
                         {
-                            await _botClient.SendTextMessageAsync(context.ChatId, result.Message);
+                            await _botClient.SendTextMessageAsync(context.ChatId, result.Message, replyMarkup: result.Buttons);
                         }
                         else
                         {

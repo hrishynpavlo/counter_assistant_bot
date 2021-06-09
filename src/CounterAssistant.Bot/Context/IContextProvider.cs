@@ -4,14 +4,14 @@ using CounterAssistant.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
 
 namespace CounterAssistant.Bot
 {
     public interface IContextProvider
     {
-        Task<ChatContext> GetContextAsync(Message message);
+        Task<ChatContext> GetContextAsync(BotRequest request);
     }
 
     public class InMemoryContextProvider : IContextProvider
@@ -33,11 +33,11 @@ namespace CounterAssistant.Bot
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<ChatContext> GetContextAsync(Message message)
+        public async Task<ChatContext> GetContextAsync(BotRequest request)
         {
-            ValidateMessage(message);
+            if (request == null) throw new ArgumentNullException(nameof(request));
 
-            var userId = message.From.Id;
+            var userId = request.UserId;
 
             var context = await _cache.GetOrCreateAsync(userId, async cacheOptions => 
             {
@@ -49,7 +49,7 @@ namespace CounterAssistant.Bot
 
                 if(user == null)
                 {
-                    user = Domain.Models.User.Default(userId, message.Chat.Id, message.From.FirstName, message.From.LastName, message.From.Username, BotCommands.START_COMMAND);
+                    user = User.Default(userId, request.ChatId, request.FirstName, request.LastName, request.UserName, BotCommands.START_COMMAND);
                     await _userService.CreateAsync(user);
                 }
 
@@ -66,11 +66,7 @@ namespace CounterAssistant.Bot
             return context;
         }
 
-        private static void ValidateMessage(Message message)
-        {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-        }
-
+        [ExcludeFromCodeCoverage(Justification = "it's impossible to test expiration in unit tests")]
         private async void OnDelete(object key, object value, EvictionReason reason, object state)
         {
             if(reason == EvictionReason.Expired)
