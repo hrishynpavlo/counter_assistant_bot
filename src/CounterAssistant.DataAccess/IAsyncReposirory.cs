@@ -1,15 +1,13 @@
-﻿using CounterAssistant.DataAccess.DTO;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace CounterAssistant.DataAccess
 {
-    public interface IAsyncReposirory<T> where T: class
+    public interface IAsyncRepository<T> where T: class
     {
         Task<T> FindOneAsync(FilterDefinition<T> filter);
         Task<IEnumerable<T>> FindManyAsync(FilterDefinition<T> filter);
@@ -22,13 +20,12 @@ namespace CounterAssistant.DataAccess
         Task<bool> RemoveOneAsync(FilterDefinition<T> filter);
     }
 
-    [ExcludeFromCodeCoverage(Justification = "mock up, not using yet")]
-    public class AsyncRepository<T> : IAsyncReposirory<T> where T: class
+    public class AsyncRepository<T> : IAsyncRepository<T> where T: class
     {
         protected readonly IMongoCollection<T> _db;
         protected readonly ILogger<T> _logger;
 
-        protected AsyncRepository(IMongoCollection<T> db, ILogger<T> logger)
+        public AsyncRepository(IMongoCollection<T> db, ILogger<T> logger)
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

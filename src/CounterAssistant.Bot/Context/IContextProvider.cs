@@ -4,40 +4,40 @@ using CounterAssistant.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
 
 namespace CounterAssistant.Bot
 {
     public interface IContextProvider
     {
-        Task<ChatContext> GetContextAsync(Message message);
+        Task<ChatContext> GetContextAsync(BotRequest request);
     }
 
     public class InMemoryContextProvider : IContextProvider
     {
         private readonly IMemoryCache _cache;
-        private readonly IUserStore _userStore;
-        private readonly ICounterStore _counterStore;
+        private readonly IUserService _userService;
+        private readonly ICounterService _counterService;
         private readonly ContextProviderSettings _settings;
         private readonly IMetricsRoot _metrics;
         private readonly ILogger<InMemoryContextProvider> _logger;
 
-        public InMemoryContextProvider(IUserStore userStore, ICounterStore counterStore, IMemoryCache cache, ContextProviderSettings settings, IMetricsRoot metrics, ILogger<InMemoryContextProvider> logger)
+        public InMemoryContextProvider(IUserService userService, ICounterService counterService, IMemoryCache cache, ContextProviderSettings settings, IMetricsRoot metrics, ILogger<InMemoryContextProvider> logger)
         {
-            _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
-            _counterStore = counterStore ?? throw new ArgumentNullException(nameof(counterStore));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _counterService = counterService ?? throw new ArgumentNullException(nameof(counterService));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<ChatContext> GetContextAsync(Message message)
+        public async Task<ChatContext> GetContextAsync(BotRequest request)
         {
-            ValidateMessage(message);
+            if (request == null) throw new ArgumentNullException(nameof(request));
 
-            var userId = message.From.Id;
+            var userId = request.UserId;
 
             var context = await _cache.GetOrCreateAsync(userId, async cacheOptions => 
             {
@@ -45,19 +45,19 @@ namespace CounterAssistant.Bot
                 cacheOptions.AbsoluteExpirationRelativeToNow = _settings.ExpirationTime;
                 cacheOptions.SlidingExpiration = _settings.ProlongationTime;
                 
-                var user = await _userStore.GetUserAsync(userId);
+                var user = await _userService.GetUserByIdAsync(userId);
 
                 if(user == null)
                 {
-                    user = Domain.Models.User.Default(userId, message.Chat.Id, message.From.FirstName, message.From.LastName, message.From.Username, BotCommands.START_COMMAND);
-                    await _userStore.CreateUserAsync(user);
+                    user = User.Default(userId, request.ChatId, request.FirstName, request.LastName, request.UserName, BotCommands.START_COMMAND);
+                    await _userService.CreateAsync(user);
                 }
 
                 Counter counter = null;
 
                 if (user.BotInfo.SelectedCounterId.HasValue)
                 {
-                    counter = await _counterStore.GetCounterAsync(user.BotInfo.SelectedCounterId.Value);
+                    counter = await _counterService.GetCounterByIdAsync(user.BotInfo.SelectedCounterId.Value);
                 }
                 _metrics.Measure.Counter.Increment(BotMetrics.CachedContext);
                 return ChatContext.Restore(user, counter);
@@ -66,11 +66,7 @@ namespace CounterAssistant.Bot
             return context;
         }
 
-        private static void ValidateMessage(Message message)
-        {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-        }
-
+        [ExcludeFromCodeCoverage(Justification = "it's impossible to test expiration in unit tests")]
         private async void OnDelete(object key, object value, EvictionReason reason, object state)
         {
             if(reason == EvictionReason.Expired)
@@ -79,18 +75,14 @@ namespace CounterAssistant.Bot
 
                 if(value is ChatContext context)
                 {
-                    await _userStore.UpdateUserAsync(new Domain.Models.User
+                    await _userService.UpdateUserChatInfoAsync(context.UserId, new UserBotInfo
                     {
-                        TelegramId = context.UserId,
-                        BotInfo = new UserBotInfo
+                        LastCommand = context.Command,
+                        SelectedCounterId = context.SelectedCounter?.Id,
+                        CreateCounterFlowInfo = new CreateCounterFlowInfo
                         {
-                            LastCommand = context.Command,
-                            SelectedCounterId = context.SelectedCounter?.Id,
-                            CreateCounterFlowInfo = new CreateCounterFlowInfo 
-                            { 
-                                State = context.CreateCounterFlow?.State.ToString(), 
-                                Args = context.CreateCounterFlow?.Args 
-                            }
+                            State = context.CreateCounterFlow?.State.ToString(),
+                            Args = context.CreateCounterFlow?.Args
                         }
                     });
 

@@ -31,9 +31,9 @@ namespace CounterAssistant.UnitTests.Bot
             _metrics = new Mock<IMetricsRoot>();
             _metrics.Setup(x => x.Measure).Returns(measure.Object);
 
-            var counterStore = new Mock<ICounterStore>();
-            counterStore.Setup(x => x.GetCountersByUserIdAsync(It.IsAny<int>())).ReturnsAsync(new List<Domain.Models.Counter>());
-            counterStore.Setup(x => x.GetCounterByNameAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(new Domain.Models.Counter("test", 1, 1, true));
+            var counterStore = new Mock<ICounterService>();
+            counterStore.Setup(x => x.GetUserCountersAsync(It.IsAny<int>())).ReturnsAsync(new List<Domain.Models.Counter>());
+            counterStore.Setup(x => x.GetCounterByBotRequstAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(new Domain.Models.Counter("test", 1, 1, true));
 
             var logger = new Mock<ILogger<BotService>>();
             var botClient = new Mock<ITelegramBotClient>();
@@ -43,22 +43,22 @@ namespace CounterAssistant.UnitTests.Bot
         }
 
         [Test]
-        public void HandleMessage_NotCommand_SuccessTest()
+        public void HandleRequest_NotCommand_SuccessTest()
         {
             //ARRANGE
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(new ChatContext { });
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(new ChatContext { });
 
-            var message = CreateMessage(text: "lores ipsum");
+            var request = CreateRequest(text: "lores ipsum");
 
             //ACT
-            var act = new AsyncTestDelegate(async() => await _bot.HandleMessage(message));
+            var act = new AsyncTestDelegate(async() => await _bot.HandleRequest(request));
 
             //ASSERT
             Assert.DoesNotThrowAsync(act);
         }
 
         [Test]
-        public async Task HandleMessage_StartCommand_SuccessTest()
+        public async Task HandleRequest_StartCommand_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -66,17 +66,17 @@ namespace CounterAssistant.UnitTests.Bot
                 ChatId = 1,
             };
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage(BotCommands.START_COMMAND));
+            await _bot.HandleRequest(CreateRequest(BotCommands.START_COMMAND));
 
             //ASSERT
             Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
         }
 
         [Test]
-        public async Task HandleMessage_CreateCounterFullFlow_SuccessTest()
+        public async Task HandleRequest_CreateCounterFullFlow_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -84,30 +84,37 @@ namespace CounterAssistant.UnitTests.Bot
                 ChatId = 1,
             };
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT && ASSERT
 
             //step 1: create counter command
-            await _bot.HandleMessage(CreateMessage(BotCommands.CREATE_COUNTER_COMMAND));
+            await _bot.HandleRequest(CreateRequest(BotCommands.CREATE_COUNTER_COMMAND));
             Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
             Assert.IsNotNull(context.CreateCounterFlow);
             Assert.AreEqual(CreateFlowSteps.SetCounterName, context.CreateCounterFlow.State);
 
             //step 2: set counter name
             var counterName = "test-counter";
-            await _bot.HandleMessage(CreateMessage(counterName));
+            await _bot.HandleRequest(CreateRequest(counterName));
             Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
             Assert.AreEqual(CreateFlowSteps.SetCounterStep, context.CreateCounterFlow.State);
 
             //step 3: set counter step
             var counterStep = 1;
-            await _bot.HandleMessage(CreateMessage(counterStep.ToString()));
+            await _bot.HandleRequest(CreateRequest(counterStep.ToString()));
+            Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
+            Assert.AreEqual(CreateFlowSteps.SetCounterType, context.CreateCounterFlow.State);
+
+            //step 4: set counter type
+            var type = CounterType.Automatic;
+            await _bot.HandleRequest(CreateRequest(type.ToString()));
             Assert.AreEqual(BotCommands.SELECT_COUNTER_COMMAND, context.Command);
+            Assert.IsNull(context.CreateCounterFlow);
         }
 
         [Test]
-        public async Task HandleMessage_DisplayAllCounters_SuccessTest()
+        public async Task HandleRequest_DisplayAllCounters_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -115,17 +122,17 @@ namespace CounterAssistant.UnitTests.Bot
                 ChatId = 1,
             };
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage(BotCommands.DISPLAY_ALL_COUNTERS_COMMAND));
+            await _bot.HandleRequest(CreateRequest(BotCommands.DISPLAY_ALL_COUNTERS_COMMAND));
 
             //ASSERT
             Assert.AreEqual(BotCommands.SELECT_COUNTER_COMMAND, context.Command);
         }
 
         [Test]
-        public async Task HandleMessage_BackCommandFromSelectMenu_SuccessTest()
+        public async Task HandleRequest_BackCommandFromSelectMenu_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -134,17 +141,17 @@ namespace CounterAssistant.UnitTests.Bot
             };
             context.SetCurrentCommand(BotCommands.SELECT_COUNTER_COMMAND);
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage(BotCommands.BACK_COMMAND));
+            await _bot.HandleRequest(CreateRequest(BotCommands.BACK_COMMAND));
 
             //ASSERT
             Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
         }
 
         [Test]
-        public async Task HandleMessage_BackCommandFromCounterMenu_SuccessTest()
+        public async Task HandleRequest_BackCommandFromCounterMenu_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -153,17 +160,17 @@ namespace CounterAssistant.UnitTests.Bot
             };
             context.SetCurrentCommand(BotCommands.MANAGE_COUNTER_COMMAND);
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage(BotCommands.BACK_COMMAND));
+            await _bot.HandleRequest(CreateRequest(BotCommands.BACK_COMMAND));
 
             //ASSERT
             Assert.AreEqual(BotCommands.SELECT_COUNTER_COMMAND, context.Command);
         }
 
         [Test]
-        public async Task HandleMessage_BackCommandDefaultCase_SuccessTest()
+        public async Task HandleRequest_BackCommandDefaultCase_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -172,17 +179,17 @@ namespace CounterAssistant.UnitTests.Bot
             };
             context.SetCurrentCommand("lores ipsum");
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage(BotCommands.BACK_COMMAND));
+            await _bot.HandleRequest(CreateRequest(BotCommands.BACK_COMMAND));
 
             //ASSERT
             Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
         }
 
         [Test]
-        public async Task HandleMessage_SelectCounterCommand_SuccessTest()
+        public async Task HandleRequest_SelectCounterCommand_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -191,10 +198,10 @@ namespace CounterAssistant.UnitTests.Bot
             };
             context.SetCurrentCommand(BotCommands.SELECT_COUNTER_COMMAND);
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage("counter#1 - 0"));
+            await _bot.HandleRequest(CreateRequest("counter#1 - 0"));
 
             //ASSERT
             Assert.AreEqual(BotCommands.MANAGE_COUNTER_COMMAND, context.Command);
@@ -202,7 +209,7 @@ namespace CounterAssistant.UnitTests.Bot
 
         [TestCase(BotCommands.INCREMENT_COMMAND)]
         [TestCase(BotCommands.DECREMENT_COMMAND)]
-        public async Task HandleMessage_IncrementDecrementCommand_SuccessTest(string command)
+        public async Task HandleRequest_IncrementDecrementCommand_SuccessTest(string command)
         {
             //ARRANGE
             var context = new ChatContext
@@ -215,10 +222,10 @@ namespace CounterAssistant.UnitTests.Bot
 
             context.SelectCounter(new Domain.Models.Counter("test", amount, step, true));
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage(command));
+            await _bot.HandleRequest(CreateRequest(command));
 
             //ASSERT
             var expected = command == BotCommands.INCREMENT_COMMAND ? (amount + step) : (amount - step);
@@ -226,7 +233,7 @@ namespace CounterAssistant.UnitTests.Bot
         }
 
         [Test]
-        public async Task HandleMessage_ResetCounter_SuccessTest()
+        public async Task HandleRequest_ResetCounter_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -237,10 +244,10 @@ namespace CounterAssistant.UnitTests.Bot
             context.SelectCounter(new Domain.Models.Counter("test", 100, 1, true));
             var lastModifiedBeforeUpdate = context.SelectedCounter.LastModifiedAt;
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage(BotCommands.RESET_COUNTER_COMMAND));
+            await _bot.HandleRequest(CreateRequest(BotCommands.RESET_COUNTER_COMMAND));
 
             //ASSERT
             Assert.AreEqual(0, context.SelectedCounter.Amount);
@@ -248,7 +255,7 @@ namespace CounterAssistant.UnitTests.Bot
         }
 
         [Test]
-        public async Task HandleMessage_RemoveCounterCommand_SuccessTest()
+        public async Task HandleRequest_RemoveCounterCommand_SuccessTest()
         {
             //ARRANGE
             var context = new ChatContext
@@ -258,10 +265,10 @@ namespace CounterAssistant.UnitTests.Bot
 
             context.SelectCounter(new Domain.Models.Counter("test", 0, 1, true));
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            await _bot.HandleMessage(CreateMessage(BotCommands.REMOVE_COUNTER_COMMAND));
+            await _bot.HandleRequest(CreateRequest(BotCommands.REMOVE_COUNTER_COMMAND));
 
             //ASSERT
             Assert.IsNull(context.SelectedCounter);
@@ -269,7 +276,7 @@ namespace CounterAssistant.UnitTests.Bot
         }
 
         [Test]
-        public void HandleMessage_CreateCounterFlowCompleted_DoesntThrowButCaptureTheError()
+        public void HandleRequest_CreateCounterFlowCompleted_DoesntThrowButCaptureTheError()
         {
             //ARRANGE
             var user = new Domain.Models.User 
@@ -294,26 +301,26 @@ namespace CounterAssistant.UnitTests.Bot
                 wasErrors = true;
             });
 
-            _provider.Setup(x => x.GetContextAsync(It.IsAny<Message>())).ReturnsAsync(context);
+            _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
             //ACT
-            var act = new AsyncTestDelegate(async() => await _bot.HandleMessage(CreateMessage("test")));
+            var act = new AsyncTestDelegate(async() => await _bot.HandleRequest(CreateRequest("test")));
 
             //ASSERT
             Assert.DoesNotThrowAsync(act);
             Assert.IsTrue(wasErrors);
         }
 
-        private static Message CreateMessage(string text, int id = 1)
+        private static BotRequest CreateRequest(string text, int id = 1)
         {
-            return new Message
+            var message = new Message
             {
                 Text = text,
                 Chat = new Chat
                 {
                     Id = id
                 },
-                From = new User 
+                From = new User
                 {
                     Id = id,
                     FirstName = "test",
@@ -321,6 +328,8 @@ namespace CounterAssistant.UnitTests.Bot
                     Username = "@test"
                 }
             };
+
+            return BotRequest.FromMessage(message); 
         }
     }
 }

@@ -17,8 +17,8 @@ namespace CounterAssistant.UnitTests.Bot
     [TestFixture]
     public class InMemoryChatContextProviderTests
     {
-        private Mock<IUserStore> _userStore;
-        private Mock<ICounterStore> _counterStore;
+        private Mock<IUserService> _userService;
+        private Mock<ICounterService> _counterStore;
         private Mock<IMemoryCache> _cache;
         private Mock<IMetricsRoot> _metrics;
         private Mock<ILogger<InMemoryContextProvider>> _logger;
@@ -32,8 +32,8 @@ namespace CounterAssistant.UnitTests.Bot
         [SetUp]
         public void Init()
         {
-            _userStore = new Mock<IUserStore>();
-            _counterStore = new Mock<ICounterStore>();
+            _userService = new Mock<IUserService>();
+            _counterStore = new Mock<ICounterService>();
             _cache = new Mock<IMemoryCache>();
             _metrics = new Mock<IMetricsRoot>();
 
@@ -49,7 +49,7 @@ namespace CounterAssistant.UnitTests.Bot
         public void GetContext_NullMessage_ThrowsArgumentNullException()
         {
             //ARRANGE
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, _cache.Object, _settings, _metrics.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, _cache.Object, _settings, _metrics.Object, _logger.Object);
 
             //ACT
             var act = new AsyncTestDelegate(async () => await contextProvider.GetContextAsync(null));
@@ -62,28 +62,22 @@ namespace CounterAssistant.UnitTests.Bot
         public async Task GetContext_ExistingUserFromCache_SuccessTest()
         {
             //ARRANGE
-            var message = new Message
-            {
-                From = new User
-                {
-                    Id = 1
-                }
-            };
+            var request = new BotRequest(new User { Id = 1 }, 1, "test");
 
             var context = new ChatContext 
             {
-                UserId = message.From.Id,
+                UserId = request.UserId,
                 UserName = "@test",
                 ChatId = 1001
             };
 
             var cache = new MemoryCache(new MemoryCacheOptions());
-            cache.Set(message.From.Id, context);
+            cache.Set(request.UserId, context);
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
-            var result = await contextProvider.GetContextAsync(message);
+            var result = await contextProvider.GetContextAsync(request);
 
             //ASSERT
             Assert.IsNotNull(result);
@@ -96,17 +90,11 @@ namespace CounterAssistant.UnitTests.Bot
         public async Task GetContext_ExistingUserFromDb_SuccessTest()
         {
             //ARRANGE
-            var message = new Message
-            {
-                From = new User
-                {
-                    Id = 1
-                }
-            };
+            var request = new BotRequest(new User { Id = 1 }, 1, "test");
 
             var user = new Domain.Models.User 
             {
-                TelegramId = message.From.Id,
+                TelegramId = request.UserId,
                 BotInfo = new Domain.Models.UserBotInfo 
                 {
                     ChatId = 1001,
@@ -121,12 +109,12 @@ namespace CounterAssistant.UnitTests.Bot
             };
 
             var cache = new MemoryCache(new MemoryCacheOptions());
-            _userStore.Setup(x => x.GetUserAsync(It.IsAny<int>())).ReturnsAsync(user);
+            _userService.Setup(x => x.GetUserByIdAsync(It.IsAny<int>())).ReturnsAsync(user);
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
-            var context = await contextProvider.GetContextAsync(message);
+            var context = await contextProvider.GetContextAsync(request);
 
             //ASSERT
             Assert.IsNotNull(context);
@@ -157,12 +145,14 @@ namespace CounterAssistant.UnitTests.Bot
                 }
             };
 
+            var request = BotRequest.FromMessage(message);
+
             var cache = new MemoryCache(new MemoryCacheOptions());
 
-            var contextProvider = new InMemoryContextProvider(_userStore.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
+            var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
             //ACT
-            var context = await contextProvider.GetContextAsync(message);
+            var context = await contextProvider.GetContextAsync(request);
 
             //ASSERT
             Assert.IsNotNull(context);

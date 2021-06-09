@@ -54,33 +54,38 @@ namespace CounterAssistant.UnitTests.Jobs
             var counter2_1 = GetCounter(user2.TelegramId, 2);
             var counter2_2 = GetCounter(user2.TelegramId, 3, 10);
 
-            var counters = new List<CounterDto>
+            var startTime = DateTime.UtcNow;
+
+            var counters = new Dictionary<int, Counter[]>
             {
-                counter1_1, counter1_2, counter2_1, counter2_2
+                [user1.TelegramId] = new[] { counter1_1, counter1_2 },
+                [user2.TelegramId] = new[] { counter2_1, counter2_2 }
             };
 
-            var users = new List<Domain.Models.User> 
+            var users = new Dictionary<int, Domain.Models.User>
             {
-                user1, user2
+                [user1.TelegramId] = user1,
+                [user2.TelegramId] = user2
             };
 
-            var counterStore = new Mock<ICounterStore>();
+            var counterService = new Mock<ICounterService>();
             var bot = new Mock<ITelegramBotClient>();
-            var userStore = new Mock<IUserStore>();
+            var userService = new Mock<IUserService>();
 
-            counterStore.Setup(x => x.GetCountersAsync()).ReturnsAsync(counters);
-            counterStore.Setup(x => x.UpdateManyAsync(It.IsAny<IEnumerable<Counter>>()))
+            var numberOfUpdatedCountes = 0;
+            counterService.Setup(x => x.GetCountersForDailyUpdateAsync()).ReturnsAsync(counters);
+            counterService.Setup(x => x.BulkUpdateAmountAsync(It.IsAny<IEnumerable<Counter>>()))
                 .Returns<IEnumerable<Counter>>(list => 
                 {
                     foreach(var updatedCounter in list)
                     {
-                        counters.FirstOrDefault(x => x.Id == updatedCounter.Id).Amount = updatedCounter.Amount;
+                        numberOfUpdatedCountes++;
                     }
 
                     return Task.CompletedTask;
                 });
 
-            userStore.Setup(x => x.GetUsersById(It.IsAny<IEnumerable<int>>())).ReturnsAsync(users);
+            userService.Setup(x => x.GetUsersByIdsAsync(It.IsAny<IEnumerable<int>>())).ReturnsAsync(users);
 
             var chatIds = new HashSet<long>();
             bot.Setup(x => x.SendTextMessageAsync(It.IsAny<ChatId>(), It.IsAny<string>(), It.IsAny<ParseMode>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<IReplyMarkup>(), It.IsAny<CancellationToken>()))
@@ -90,10 +95,9 @@ namespace CounterAssistant.UnitTests.Jobs
                     return Task.FromResult(new Message()); 
                 });
 
-            var job = new ProcessCountersJob(counterStore.Object, bot.Object, userStore.Object, Logger.Object, Metrics.Object);
+            var job = new ProcessCountersJob(counterService.Object, bot.Object, userService.Object, Logger.Object, Metrics.Object);
 
             //ACT
-            var oldAmounts = counters.ToDictionary(x => x.Id, x => x.Amount);
             AsyncTestDelegate act = async() => await job.Execute(JobContext.Object);
 
             //ASSERT
@@ -105,14 +109,8 @@ namespace CounterAssistant.UnitTests.Jobs
                 Assert.IsTrue(chatIds.Contains(user2.BotInfo.ChatId));
             });
 
-            Assert.Multiple(() =>
-            {
-                foreach (var counter in counters)
-                {
-                    Assert.IsTrue(oldAmounts.TryGetValue(counter.Id, out var oldAmount));
-                    Assert.AreEqual(counter.Amount, oldAmount + counter.Step);
-                }
-            });
+            Assert.AreEqual(counters.Values.SelectMany(x => x).Count(), numberOfUpdatedCountes);
+            Assert.IsTrue(counters.Values.SelectMany(x => x).All(x => x.LastModifiedAt > startTime));
         }
 
         [Test]
@@ -122,8 +120,8 @@ namespace CounterAssistant.UnitTests.Jobs
             var user = GetUser(1);
             var counter = GetCounter(user.TelegramId);
 
-            var counterStore = new Mock<ICounterStore>();
-            counterStore.Setup(x => x.GetCountersAsync()).ReturnsAsync(new List<CounterDto> { counter });
+            var counterService = new Mock<ICounterService>();
+            counterService.Setup(x => x.GetCountersForDailyUpdateAsync()).ReturnsAsync(new Dictionary<int, Counter[]> { [user.TelegramId] = new[] { counter } });
 
             var wasMessagesSent = false;
             var bot = new Mock<ITelegramBotClient>();
@@ -134,10 +132,10 @@ namespace CounterAssistant.UnitTests.Jobs
                    return new Message(); 
                });
 
-            var userStore = new Mock<IUserStore>();
-            userStore.Setup(x => x.GetUsersById(It.IsAny<IEnumerable<int>>())).ReturnsAsync(new List<Domain.Models.User>());
+            var userService = new Mock<IUserService>();
+            userService.Setup(x => x.GetUsersByIdsAsync(It.IsAny<IEnumerable<int>>())).ReturnsAsync(new Dictionary<int, Domain.Models.User>());
 
-            var job = new ProcessCountersJob(counterStore.Object, bot.Object, userStore.Object, Logger.Object, Metrics.Object);
+            var job = new ProcessCountersJob(counterService.Object, bot.Object, userService.Object, Logger.Object, Metrics.Object);
 
             //ACT
             AsyncTestDelegate act = async () => await job.Execute(JobContext.Object);
@@ -147,19 +145,9 @@ namespace CounterAssistant.UnitTests.Jobs
             Assert.IsFalse(wasMessagesSent);
         }
 
-        private static CounterDto GetCounter(int userId, ushort step = 1, int amount = 0)
+        private static Counter GetCounter(int userId, ushort step = 1, int amount = 0)
         {
-            return new CounterDto
-            {
-                Amount = amount,
-                Step = step,
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Title = Guid.NewGuid().ToString(),
-                CreatedAt = DateTime.UtcNow,
-                LastModifiedAt = DateTime.UtcNow,
-                IsManual = false
-            };
+            return new Counter(id: Guid.NewGuid(), Guid.NewGuid().ToString(), amount, step, DateTime.UtcNow, null, false);
         }
 
         private static Domain.Models.User GetUser(int id)
