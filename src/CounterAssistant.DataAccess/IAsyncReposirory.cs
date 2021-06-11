@@ -23,9 +23,9 @@ namespace CounterAssistant.DataAccess
     public class AsyncRepository<T> : IAsyncRepository<T> where T: class
     {
         protected readonly IMongoCollection<T> _db;
-        protected readonly ILogger<T> _logger;
+        protected readonly ILogger<AsyncRepository<T>> _logger;
 
-        public AsyncRepository(IMongoCollection<T> db, ILogger<T> logger)
+        public AsyncRepository(IMongoCollection<T> db, ILogger<AsyncRepository<T>> logger)
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
