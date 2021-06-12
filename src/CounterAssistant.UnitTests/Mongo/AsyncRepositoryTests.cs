@@ -1,11 +1,9 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CounterAssistant.UnitTests.Mongo
@@ -28,11 +26,14 @@ namespace CounterAssistant.UnitTests.Mongo
                 DateTimeField = dt
             };
 
+            Console.WriteLine(JsonConvert.SerializeObject(entity));
+
             //ACT & ASSERT
             var result = await _repository.CreateOneAsync(entity);
             Assert.IsTrue(result);
 
             var byId = await _repository.FindOneAsync(Builders<TestEntity>.Filter.Eq(x => x.Id, id));
+            Console.WriteLine(JsonConvert.SerializeObject(byId));
             Assert.IsNotNull(byId);
             Assert.AreEqual(entity, byId);
 
