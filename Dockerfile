@@ -6,13 +6,9 @@ RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key 
 RUN echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 RUN sudo apt-get update 
 RUN sudo apt-get install -y mongodb-org
-RUN echo "mongodb-org hold" | sudo dpkg --set-selections && \
-    echo "mongodb-org-server hold" | sudo dpkg --set-selections && \
-    echo "mongodb-org-shell hold" | sudo dpkg --set-selections && \
-    echo "mongodb-org-mongos hold" | sudo dpkg --set-selections && \
-    echo "mongodb-org-tools hold" | sudo dpkg --set-selections
-RUN sudo service mongod start
-RUN sudo service mongod status
+RUN sudo apt-get -y install systemd
+RUN sudo systemctl daemon-reload
+RUN sudo systemctl start mongod
 WORKDIR /build
 COPY ./src/ .
 RUN dotnet restore
