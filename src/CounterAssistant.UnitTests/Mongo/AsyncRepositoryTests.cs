@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace CounterAssistant.UnitTests.Mongo
 {
-    [TestFixture]
+    [TestFixture, Category("MongoIntegration")]
     public class AsyncRepositoryTests : MongoBaseTest<TestEntity>
     {
         [Test]
