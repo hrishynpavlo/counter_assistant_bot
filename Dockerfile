@@ -4,7 +4,7 @@ COPY ./src/ .
 RUN dotnet restore
 RUN dotnet tool restore
 RUN dotnet build
-RUN dotnet test --no-build --collect "XPlat Code Coverage"  -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover --filter TestCategory!=MongoIntegration
+RUN dotnet test --no-build --collect "XPlat Code Coverage" TestCategory!=MongoIntegration -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover --filter 
 RUN dotnet reportgenerator -reports:**/TestResults/**/coverage.opencover.xml -targetdir:codecoverage  -reporttypes:textSummary
 RUN dotnet publish -c Release
 
