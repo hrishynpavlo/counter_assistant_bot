@@ -7,6 +7,8 @@ RUN echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | 
 RUN sudo apt-get update 
 RUN sudo apt-get install -y mongodb-org-server
 RUN ps --no-headers -o comm 1
+RUN sudo service mongod status
+RUN sudo service mongod start
 WORKDIR /build
 COPY ./src/ .
 RUN dotnet restore
