@@ -1,7 +1,4 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
-using Newtonsoft.Json;
+﻿using MongoDB.Driver;
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
@@ -25,15 +22,14 @@ namespace CounterAssistant.UnitTests.Mongo
                 GuidField = guid,
                 DateTimeField = dt
             };
-
-            Console.WriteLine(JsonConvert.SerializeObject(entity));
+            Console.WriteLine($"app: {entity.DateTimeField}");
 
             //ACT & ASSERT
             var result = await _repository.CreateOneAsync(entity);
             Assert.IsTrue(result);
 
             var byId = await _repository.FindOneAsync(Builders<TestEntity>.Filter.Eq(x => x.Id, id));
-            Console.WriteLine(JsonConvert.SerializeObject(byId));
+            Console.WriteLine($"db: {byId.DateTimeField}");
             Assert.IsNotNull(byId);
             Assert.AreEqual(entity, byId);
 
@@ -47,10 +43,8 @@ namespace CounterAssistant.UnitTests.Mongo
     {
         public int Id { get; set; }
 
-        [BsonGuidRepresentation(GuidRepresentation.Standard)]
         public Guid GuidField { get; set; }
 
-        [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
         public DateTime DateTimeField { get; set; }
 
         public override int GetHashCode()
@@ -70,8 +64,7 @@ namespace CounterAssistant.UnitTests.Mongo
             if (ReferenceEquals(this, other)) return true;
             return Id == other.Id && GuidField == other.GuidField && DateTimeField.Date == other.DateTimeField.Date &&
                 DateTimeField.Minute == other.DateTimeField.Minute &&
-                DateTimeField.Second == other.DateTimeField.Second &&
-                DateTimeField.Millisecond == other.DateTimeField.Millisecond;
+                DateTimeField.Second == other.DateTimeField.Second;
         }
     }
 }
