@@ -1,4 +1,6 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -43,7 +45,11 @@ namespace CounterAssistant.UnitTests.Mongo
     public class TestEntity : IEquatable<TestEntity>
     {
         public int Id { get; set; }
+
+        [BsonGuidRepresentation(GuidRepresentation.Standard)]
         public Guid GuidField { get; set; }
+
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
         public DateTime DateTimeField { get; set; }
 
         public override int GetHashCode()
