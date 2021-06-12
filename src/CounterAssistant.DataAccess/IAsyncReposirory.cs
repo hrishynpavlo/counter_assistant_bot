@@ -42,6 +42,7 @@ namespace CounterAssistant.DataAccess
             }
             catch(Exception ex)
             {
+                Console.WriteLine(ex.ToString());
                 _logger.LogError(ex, "error during inserting entity {entity}", JsonConvert.SerializeObject(entity));
                 return false;
             }
