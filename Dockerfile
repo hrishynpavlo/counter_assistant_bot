@@ -6,7 +6,7 @@ RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key 
 RUN echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 RUN sudo apt-get update 
 RUN sudo apt-get install -y mongodb-org
-RUN sudo systemctl daemon-reload
+RUN sudo apt install mongodb-server  
 RUN sudo service mongod start
 RUN sudo service mongod status
 WORKDIR /build
