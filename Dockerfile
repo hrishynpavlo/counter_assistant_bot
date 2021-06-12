@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:5.0 as build-env
 RUN apt-get update && \
       apt-get -y install sudo
+RUN sudo apt-get -y install gnupg 
 RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
 RUN echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 RUN sudo apt-get update 
