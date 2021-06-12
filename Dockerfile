@@ -4,8 +4,8 @@ RUN apt-get update && \
       apt-get -y install sudo
 RUN sudo apt-get -y install gnupg 
 RUN echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list 
-RUN sudo apt-get update && \
-    sudo apt-get install -y mongodb-org
+RUN sudo apt-get update 
+RUN sudo apt-get install -y mongodb-org
 RUN sudo systemctl start mongod
 COPY ./src/ .
 RUN dotnet restore
