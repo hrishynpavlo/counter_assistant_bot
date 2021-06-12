@@ -13,5 +13,6 @@
         public const string MANAGE_COUNTER_COMMAND = "/manage";
         public const string SETTINGS_COMMAND = "Настройки";
         public const string REMOVE_COUNTER_COMMAND = "Удалить счётчик";
+        public const string PAYMENT_COMMAND = "/payment";
     }
 }

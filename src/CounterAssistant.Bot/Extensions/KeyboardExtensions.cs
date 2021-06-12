@@ -15,5 +15,12 @@ namespace CounterAssistant.Bot.Extensions
         {
             return new InlineKeyboardMarkup(buttons.Select(kvp => new InlineKeyboardButton { CallbackData = kvp.Key, Pay = false, Text = kvp.Value }));
         }
+
+
+        //U+ should be replaced by 0x
+        public static InlineKeyboardMarkup ToPaymentButton(string action, string text, string url)
+        {
+            return new InlineKeyboardMarkup(new InlineKeyboardButton { Url = url , CallbackData = action, Pay = false, Text = $"{char.ConvertFromUtf32(0x27A1)} {text}" });
+        }
     }
 }
