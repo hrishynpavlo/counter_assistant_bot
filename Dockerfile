@@ -1,5 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:5.0 as build-env
 WORKDIR /build
+RUN apt-get update && \
+      apt-get -y install sudo
+RUN sudo apt-get install -y mongodb-org
 COPY ./src/ .
 RUN dotnet restore
 RUN dotnet tool restore
