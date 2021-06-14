@@ -1,4 +1,5 @@
 ﻿using CounterAssistant.Bot.Extensions;
+using CounterAssistant.Bot.Localization;
 using CounterAssistant.Domain.Builders;
 using CounterAssistant.Domain.Models;
 using System;
@@ -38,13 +39,13 @@ namespace CounterAssistant.Bot.Flows
                 case CreateFlowSteps.None:
                     {
                         _currentStep = CreateFlowSteps.SetCounterName;
-                        return new CreateCounterResult { IsSuccess = false, Message = "Введите название счётчика:" };
+                        return new CreateCounterResult { IsCompleted = false, Message = "Введите название счётчика:" };
                     }
                 case CreateFlowSteps.SetCounterName:
                     {
                         _builder.WithName(message);
                         _currentStep = CreateFlowSteps.SetCounterStep;
-                        return new CreateCounterResult { IsSuccess = false, Message = "Введите шаг счётчика:" };
+                        return new CreateCounterResult { IsCompleted = false, Message = "Введите шаг счётчика:" };
                     }
                 case CreateFlowSteps.SetCounterStep:
                     {
@@ -56,7 +57,7 @@ namespace CounterAssistant.Bot.Flows
                         _builder.WithStep(step);
                         _currentStep = CreateFlowSteps.SetCounterType;
 
-                        return new CreateCounterResult { IsSuccess = false, Message = "Выберите тип обновления для счётчика: ", Buttons = _types.ToDictionary(x => x.Key.ToString(), v => v.Value).ToInlineButtons() };
+                        return new CreateCounterResult { IsCompleted = false, Message = "Выберите тип обновления для счётчика: ", Buttons = _types.ToDictionary(x => x.Key.ToString(), v => v.Value).ToInlineButtons() };
                     } 
                 case CreateFlowSteps.SetCounterType:
                     {
@@ -74,9 +75,20 @@ namespace CounterAssistant.Bot.Flows
 
                         _builder.WithType(isManual);
 
+                        _currentStep = CreateFlowSteps.SetCounterUnit;
+                        return new CreateCounterResult { IsCompleted = false, Message = "Выберите единицу измерения счётчика: ", Buttons = LocalizedCounterUnitProvider.Get().ToInlineButtons() };
+                    }
+                case CreateFlowSteps.SetCounterUnit:
+                    {
+                        if(!Enum.TryParse<CounterUnit>(message, ignoreCase: true, out var unit))
+                        {
+                            throw new FlowException(nameof(CreateCounterFlow), $"{message} is unsupported counter unit");
+                        }
+
+                        _builder.WithUnit(unit);
                         _currentStep = CreateFlowSteps.Completed;
                         var counter = _builder.Build();
-                        return new CreateCounterResult { IsSuccess = true, Counter = counter, Message = $"Счётчик <b>{counter.Title.ToUpper()}</b> успешно создан" };
+                        return new CreateCounterResult { IsCompleted = true, Counter = counter, Message = $"Счётчик <b>{counter.Title.ToUpper()}</b> успешно создан" };
                     }
                 default: throw new FlowException(nameof(CreateCounterFlow), $"Step {_currentStep} is not supported");
             }
@@ -114,6 +126,11 @@ namespace CounterAssistant.Bot.Flows
                 {
                     builder.WithType((bool)counterType);
                 }
+
+                if(user.BotInfo.CreateCounterFlowInfo.Args.TryGetValue(CounterBuilder.UnitArgKey, out var unit))
+                {
+                    builder.WithUnit((CounterUnit)unit);
+                }
             }
 
             return new CreateCounterFlow(step, builder);
@@ -122,7 +139,7 @@ namespace CounterAssistant.Bot.Flows
 
     public class CreateCounterResult
     {
-        public bool IsSuccess { get; set; }
+        public bool IsCompleted { get; set; }
         public string Message { get; set; }
         public IReplyMarkup Buttons { get; set; }
         public Counter Counter { get; set; }
@@ -134,6 +151,7 @@ namespace CounterAssistant.Bot.Flows
         SetCounterName,
         SetCounterStep,
         SetCounterType,
+        SetCounterUnit,
         Completed
     }
 

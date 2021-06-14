@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace CounterAssistant.Bot.Payments
         Task<string> GetMonthlySubscriptionUrl();
     }
 
+    [ExcludeFromCodeCoverage]
     public class LiqpayService : IPaymentService
     {
         private readonly static Uri PaymentBaseUrl = new Uri("https://www.liqpay.ua");

@@ -8,10 +8,13 @@ namespace CounterAssistant.Domain.Builders
         private string _title;
         private ushort? _step;
         private bool? _isManual;
+        private CounterUnit? _unit;
 
         public const string TitleArgKey = "name";
         public const string StepArgKey = "step";
         public const string IsManualArgKey = "isManual";
+        public const string UnitArgKey = "unit";
+
         public const ushort DefultStep = 1;
         public const bool DefaultIsManual = false;
 
@@ -33,11 +36,17 @@ namespace CounterAssistant.Domain.Builders
             return this;
         }
 
+        public CounterBuilder WithUnit(CounterUnit unit)
+        {
+            _unit = unit;
+            return this;
+        }
+
         public Counter Build()
         {
             try
             {
-                var counter = new Counter(_title, 0, _step ?? DefultStep, _isManual ?? DefaultIsManual);
+                var counter = new Counter(_title, 0, _step ?? DefultStep, _isManual ?? DefaultIsManual, _unit ?? CounterUnit.Time);
                 Reset();
                 return counter;
             }
@@ -54,6 +63,7 @@ namespace CounterAssistant.Domain.Builders
             if (!string.IsNullOrWhiteSpace(_title)) args[TitleArgKey] = _title;
             if (_step.HasValue) args[StepArgKey] = _step.Value;
             if (_isManual.HasValue) args[IsManualArgKey] = _isManual.Value;
+            if (_unit.HasValue) args[UnitArgKey] = _unit.Value;
 
             return args;
         }
@@ -65,6 +75,7 @@ namespace CounterAssistant.Domain.Builders
             _title = string.Empty;
             _step = null;
             _isManual = null;
+            _unit = null;
         }
     }
 }

@@ -7,13 +7,14 @@ namespace CounterAssistant.Domain.Models
         private readonly Guid _id;
         private readonly DateTime _createdAt;
         private readonly bool _isManual;
+        private readonly CounterUnit _unit;
+        private readonly ushort _step;
 
         private string _title;
         private int _amount;
-        private ushort _step;
         private DateTime? _lastModifiedAt;
 
-        public Counter(Guid id, string title, int amount, ushort step, DateTime createdAt, DateTime? lastModifiedAt, bool isManual)
+        public Counter(Guid id, string title, int amount, ushort step, DateTime createdAt, DateTime? lastModifiedAt, bool isManual, CounterUnit unit)
         {
             _id = id;
             _title = title;
@@ -22,9 +23,10 @@ namespace CounterAssistant.Domain.Models
             _createdAt = createdAt;
             _lastModifiedAt = createdAt == lastModifiedAt ? null : lastModifiedAt;
             _isManual = isManual;
+            _unit = unit;
         }
 
-        public Counter(string title, int amount, ushort step, bool isManual)
+        public Counter(string title, int amount, ushort step, bool isManual, CounterUnit unit)
         {
             _id = Guid.NewGuid();
             _createdAt = DateTime.UtcNow;
@@ -32,6 +34,7 @@ namespace CounterAssistant.Domain.Models
             _amount = amount;
             _step = step;
             _isManual = isManual;
+            _unit = unit;
         }
 
         public Guid Id => _id;
@@ -41,6 +44,7 @@ namespace CounterAssistant.Domain.Models
         public DateTime CreatedAt => _createdAt;
         public DateTime LastModifiedAt => _lastModifiedAt.HasValue ? _lastModifiedAt.Value : _createdAt;
         public bool IsManual => _isManual;
+        public CounterUnit Unit => _unit;
 
         public void Increment()
         {
@@ -64,5 +68,16 @@ namespace CounterAssistant.Domain.Models
             _amount = 0;
             _lastModifiedAt = DateTime.UtcNow;
         }
+    }
+
+    public enum CounterUnit
+    {
+        Day = 1,
+        Week,
+        Lesson,
+        Time,
+        Training,
+        Evening,
+        Morning
     }
 }

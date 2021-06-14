@@ -147,7 +147,7 @@ namespace CounterAssistant.UnitTests.Jobs
 
         private static Counter GetCounter(int userId, ushort step = 1, int amount = 0)
         {
-            return new Counter(id: Guid.NewGuid(), Guid.NewGuid().ToString(), amount, step, DateTime.UtcNow, null, false);
+            return new Counter(id: Guid.NewGuid(), Guid.NewGuid().ToString(), amount, step, DateTime.UtcNow, null, false, CounterUnit.Time);
         }
 
         private static Domain.Models.User GetUser(int id)

@@ -13,7 +13,7 @@ namespace CounterAssistant.UnitTests.Domains
             var amount = 0;
             ushort step = 10;
 
-            var counter = new Counter("test", amount, step, true);
+            var counter = new Counter("test", amount, step, true, CounterUnit.Time);
             var lastModifiedAtStart = counter.LastModifiedAt;
 
             //ACT & ASSERT

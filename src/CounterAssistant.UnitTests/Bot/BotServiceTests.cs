@@ -3,6 +3,7 @@ using App.Metrics.Counter;
 using CounterAssistant.Bot;
 using CounterAssistant.Bot.Flows;
 using CounterAssistant.DataAccess;
+using CounterAssistant.Domain.Models;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
@@ -33,7 +34,7 @@ namespace CounterAssistant.UnitTests.Bot
 
             var counterStore = new Mock<ICounterService>();
             counterStore.Setup(x => x.GetUserCountersAsync(It.IsAny<int>())).ReturnsAsync(new List<Domain.Models.Counter>());
-            counterStore.Setup(x => x.GetCounterByBotRequstAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(new Domain.Models.Counter("test", 1, 1, true));
+            counterStore.Setup(x => x.GetCounterByBotRequstAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(new Domain.Models.Counter("test", 1, 1, true, CounterUnit.Time));
 
             var logger = new Mock<ILogger<BotService>>();
             var botClient = new Mock<ITelegramBotClient>();
@@ -220,7 +221,7 @@ namespace CounterAssistant.UnitTests.Bot
             var amount = 1;
             ushort step = 1;
 
-            context.SelectCounter(new Domain.Models.Counter("test", amount, step, true));
+            context.SelectCounter(new Domain.Models.Counter("test", amount, step, true, CounterUnit.Time));
 
             _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
@@ -241,7 +242,7 @@ namespace CounterAssistant.UnitTests.Bot
                 ChatId = 1,
             };
 
-            context.SelectCounter(new Domain.Models.Counter("test", 100, 1, true));
+            context.SelectCounter(new Domain.Models.Counter("test", 100, 1, true, CounterUnit.Time));
             var lastModifiedBeforeUpdate = context.SelectedCounter.LastModifiedAt;
 
             _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
@@ -263,7 +264,7 @@ namespace CounterAssistant.UnitTests.Bot
                 ChatId = 1
             };
 
-            context.SelectCounter(new Domain.Models.Counter("test", 0, 1, true));
+            context.SelectCounter(new Counter("test", 0, 1, true, CounterUnit.Time));
 
             _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
@@ -320,7 +321,7 @@ namespace CounterAssistant.UnitTests.Bot
                 {
                     Id = id
                 },
-                From = new User
+                From = new Telegram.Bot.Types.User
                 {
                     Id = id,
                     FirstName = "test",

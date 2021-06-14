@@ -51,7 +51,7 @@ namespace CounterAssistant.UnitTests.Bot.Flows
             //step 1: none
             var result = flow.Perform(string.Empty);
             Assert.AreEqual(CreateFlowSteps.SetCounterName, flow.State);
-            Assert.IsFalse(result.IsSuccess);
+            Assert.IsFalse(result.IsCompleted);
             Assert.IsFalse(string.IsNullOrWhiteSpace(result.Message));
             Assert.AreEqual(0, flow.Args.Count);
 
@@ -59,7 +59,7 @@ namespace CounterAssistant.UnitTests.Bot.Flows
             var counterName = "test-counter";
             result = flow.Perform(counterName);
             Assert.AreEqual(CreateFlowSteps.SetCounterStep, flow.State);
-            Assert.IsFalse(result.IsSuccess);
+            Assert.IsFalse(result.IsCompleted);
             Assert.IsFalse(string.IsNullOrWhiteSpace(result.Message));
             Assert.AreEqual(1, flow.Args.Count);
 
@@ -67,7 +67,7 @@ namespace CounterAssistant.UnitTests.Bot.Flows
             var counterStep = 1;
             result = flow.Perform(counterStep.ToString());
             Assert.AreEqual(CreateFlowSteps.SetCounterType, flow.State);
-            Assert.IsFalse(result.IsSuccess);
+            Assert.IsFalse(result.IsCompleted);
             Assert.AreEqual(2, flow.Args.Count);
             Assert.IsNotNull(result.Buttons);
 
@@ -75,7 +75,7 @@ namespace CounterAssistant.UnitTests.Bot.Flows
             var counterType = CounterType.Automatic;
             result = flow.Perform(counterType.ToString());
             Assert.AreEqual(CreateFlowSteps.Completed, flow.State);
-            Assert.IsTrue(result.IsSuccess);
+            Assert.IsTrue(result.IsCompleted);
             Assert.IsFalse(string.IsNullOrWhiteSpace(result.Message));
             Assert.IsNotNull(result.Counter);
             Assert.AreEqual(counterName, result.Counter.Title);

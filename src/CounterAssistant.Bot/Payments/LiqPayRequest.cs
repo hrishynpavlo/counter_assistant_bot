@@ -1,11 +1,13 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace CounterAssistant.Bot.Payments
 {
+    [ExcludeFromCodeCoverage]
     public class LiqPayRequest
     {
         private LiqPayRequest(string publicKey, string privateKey, ActionType action, decimal amount, LiqpayCurrency currency, string description, Guid orderId, DateTime subscribeStartDate, SubscribePeriodicity subscribePeriodicity)

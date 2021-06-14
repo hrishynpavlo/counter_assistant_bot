@@ -1,9 +1,9 @@
 ﻿using App.Metrics;
+using CounterAssistant.Bot.Formatters;
 using CounterAssistant.DataAccess;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using System;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -17,16 +17,18 @@ namespace CounterAssistant.API.Jobs
         private readonly ICounterService _counterService;
         private readonly ITelegramBotClient _botClient;
         private readonly IUserService _userService;
+        private readonly IBotMessageFormatter _messageFormatter;
         private readonly ILogger<ProcessCountersJob> _logger;
         private readonly IMetricsRoot _metrics;
 
         private readonly static MetricTags Tag = new MetricTags("job_name", "process_counter");
 
-        public ProcessCountersJob(ICounterService counterService, ITelegramBotClient botClient, IUserService userService, ILogger<ProcessCountersJob> logger, IMetricsRoot metrics)
+        public ProcessCountersJob(ICounterService counterService, ITelegramBotClient botClient, IUserService userService, IBotMessageFormatter messageFormatter, ILogger<ProcessCountersJob> logger, IMetricsRoot metrics)
         {
             _counterService = counterService ?? throw new ArgumentNullException(nameof(counterService));
             _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _messageFormatter = messageFormatter ?? throw new ArgumentNullException(nameof(messageFormatter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
         }

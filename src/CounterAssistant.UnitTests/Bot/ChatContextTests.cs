@@ -101,7 +101,7 @@ namespace CounterAssistant.UnitTests.Bot
                 }
             };
 
-            var counter = new Counter(counterId, nameof(Restore_WithFlowAndCounter_SuccessTest), 1, 1, DateTime.UtcNow, null, true);
+            var counter = new Counter(counterId, nameof(Restore_WithFlowAndCounter_SuccessTest), 1, 1, DateTime.UtcNow, null, true, CounterUnit.Time);
 
             //ACT
             var context = ChatContext.Restore(user, counter);

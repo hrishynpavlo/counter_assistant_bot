@@ -2,9 +2,9 @@ using App.Metrics;
 using App.Metrics.Formatters.Prometheus;
 using CounterAssistant.API.Extensions;
 using CounterAssistant.API.HealthChecks;
-using CounterAssistant.API.HostedServices;
 using CounterAssistant.API.Jobs;
 using CounterAssistant.Bot;
+using CounterAssistant.Bot.Formatters;
 using CounterAssistant.DataAccess;
 using CounterAssistant.DataAccess.DTO;
 using Microsoft.AspNetCore.Builder;
@@ -86,9 +86,8 @@ namespace CounterAssistant.API
             services.AddSingleton<IContextProvider, InMemoryContextProvider>();
 
             services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(appSettings.TelegramBotAccessToken));
-            services.AddSingleton<BotService>();
 
-            services.AddHostedService<BotHostedService>();
+            services.AddHostedService<BotService>();
 
             services.AddQuartz(options => 
             {
@@ -148,6 +147,8 @@ namespace CounterAssistant.API
             services.AddSingleton(typeof(IAsyncRepository<>), typeof(AsyncRepository<>));
             services.AddSingleton<ICounterService, CounterService>();
             services.AddSingleton<IUserService, UserService>();
+
+            services.AddSingleton<IBotMessageFormatter, BotMessageFormatter>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
