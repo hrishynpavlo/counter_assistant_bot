@@ -16,8 +16,9 @@ namespace CounterAssistant.API.Controllers
         private readonly IAsyncRepository<MonobankTransaction> _repository;
         private readonly ILogger<MonobankController> _logger;
 
-        public MonobankController(ILogger<MonobankController> logger)
+        public MonobankController(ILogger<MonobankController> logger, IAsyncRepository<MonobankTransaction> repository)
         {
+            _repository = repository;
             _logger = logger;
         }
 
