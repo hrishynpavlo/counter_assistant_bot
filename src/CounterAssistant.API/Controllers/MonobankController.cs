@@ -1,7 +1,10 @@
 ﻿using CounterAssistant.DataAccess;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
+using System;
 using System.Threading.Tasks;
 
 namespace CounterAssistant.API.Controllers
@@ -21,8 +24,16 @@ namespace CounterAssistant.API.Controllers
         [HttpPost("recieveTransaction")]
         public async Task<IActionResult> RecieveTransaction([FromBody] MonobankTransaction transaction)
         {
-            _logger.LogInformation("MONOBANK TRANSACTION: {transaction}", JsonConvert.SerializeObject(transaction));
-            await _repository.CreateOneAsync(transaction);
+            _logger.LogInformation("MONOBANK TRANSACTION: \n{transaction}", JsonConvert.SerializeObject(transaction, Formatting.Indented));
+
+            try
+            {
+                await _repository.CreateOneAsync(transaction);
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Exception during saving monobank transaction in mongo");
+            }
 
             return Ok();
         }
@@ -30,6 +41,9 @@ namespace CounterAssistant.API.Controllers
 
     public class MonobankTransaction
     {
+        [BsonId]
+        [BsonGuidRepresentation(GuidRepresentation.Standard)]
+        public Guid Id { get; init; } = Guid.NewGuid();
         public string Type { get; set; }
         public TransactionData Data { get; set; }
     }
