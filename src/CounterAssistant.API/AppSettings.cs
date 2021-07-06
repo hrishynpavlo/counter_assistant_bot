@@ -12,6 +12,7 @@ namespace CounterAssistant.API
         public string MongoDatabase { get; private set; }
         public string MongoUserCollection { get; private set; }
         public string MongoCounterCollection { get; private set; }
+        public string MongoMonobankTransactionCollection { get; private set; }
         public TimeSpan CacheExpirationTime { get; private set; }
         public TimeSpan CacheProlongationTime { get; private set; }
         public string Server { get; private set; }
@@ -28,6 +29,7 @@ namespace CounterAssistant.API
                 MongoDatabase = configuration.GetValue<string>("mongo:database") ?? configuration.GetValue<string>("MONGO_DATABASE"),
                 MongoUserCollection = configuration.GetValue<string>("mongo:collection:users"),
                 MongoCounterCollection = configuration.GetValue<string>("mongo:collection:counters"),
+                MongoMonobankTransactionCollection = configuration.GetValue<string>("mongo:collection:monobankTransactions"),
                 CacheExpirationTime = TimeSpan.FromMinutes(configuration.GetValue("cache:expirationTimeInMinutes", 30)),
                 CacheProlongationTime = TimeSpan.FromMinutes(configuration.GetValue("cache:prolongationTimeInMinutes", 3)),
                 Server = configuration.GetValue("SERVER", "local"),
