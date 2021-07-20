@@ -1,5 +1,6 @@
 using App.Metrics;
 using App.Metrics.Formatters.Prometheus;
+using CounterAssistant.API.Controllers;
 using CounterAssistant.API.Extensions;
 using CounterAssistant.API.HealthChecks;
 using CounterAssistant.API.Jobs;
@@ -59,11 +60,18 @@ namespace CounterAssistant.API
                 var client = new MongoClient(appSettings.MongoHost);
                 return client.GetDatabase(appSettings.MongoDatabase);
             });
+            services.AddSingleton<IMongoCollection<MonobankTransaction>>(provider => 
+            {
+                var mongo = provider.GetService<IMongoDatabase>();
+                return mongo.GetCollection<MonobankTransaction>(appSettings.MongoMonobankTransactionCollection);
+            });
+
             services.AddSingleton<IMongoCollection<UserDto>>(provider => 
             {
                 var mongo = provider.GetService<IMongoDatabase>();
                 return mongo.GetCollection<UserDto>(appSettings.MongoUserCollection);
             });
+
             services.AddSingleton<IMongoCollection<CounterDto>>(provider =>
             {
                 var mongo = provider.GetService<IMongoDatabase>();
