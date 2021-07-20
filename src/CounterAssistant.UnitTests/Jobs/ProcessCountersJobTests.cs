@@ -1,6 +1,7 @@
 ﻿using App.Metrics;
 using App.Metrics.Counter;
 using CounterAssistant.API.Jobs;
+using CounterAssistant.Bot.Formatters;
 using CounterAssistant.DataAccess;
 using CounterAssistant.DataAccess.DTO;
 using CounterAssistant.Domain.Models;
@@ -95,7 +96,7 @@ namespace CounterAssistant.UnitTests.Jobs
                     return Task.FromResult(new Message()); 
                 });
 
-            var job = new ProcessCountersJob(counterService.Object, bot.Object, userService.Object, Logger.Object, Metrics.Object);
+            var job = new ProcessCountersJob(counterService.Object, bot.Object, userService.Object, new BotMessageFormatter(), Logger.Object, Metrics.Object);
 
             //ACT
             AsyncTestDelegate act = async() => await job.Execute(JobContext.Object);
@@ -135,7 +136,7 @@ namespace CounterAssistant.UnitTests.Jobs
             var userService = new Mock<IUserService>();
             userService.Setup(x => x.GetUsersByIdsAsync(It.IsAny<IEnumerable<int>>())).ReturnsAsync(new Dictionary<int, Domain.Models.User>());
 
-            var job = new ProcessCountersJob(counterService.Object, bot.Object, userService.Object, Logger.Object, Metrics.Object);
+            var job = new ProcessCountersJob(counterService.Object, bot.Object, userService.Object, new BotMessageFormatter(), Logger.Object, Metrics.Object);
 
             //ACT
             AsyncTestDelegate act = async () => await job.Execute(JobContext.Object);
@@ -147,7 +148,7 @@ namespace CounterAssistant.UnitTests.Jobs
 
         private static Counter GetCounter(int userId, ushort step = 1, int amount = 0)
         {
-            return new Counter(id: Guid.NewGuid(), Guid.NewGuid().ToString(), amount, step, DateTime.UtcNow, null, false);
+            return new Counter(id: Guid.NewGuid(), Guid.NewGuid().ToString(), amount, step, DateTime.UtcNow, null, false, CounterUnit.Time);
         }
 
         private static Domain.Models.User GetUser(int id)

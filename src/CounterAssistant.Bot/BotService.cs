@@ -1,13 +1,16 @@
 ﻿using App.Metrics;
 using CounterAssistant.Bot.Extensions;
+using CounterAssistant.Bot.Formatters;
 using CounterAssistant.DataAccess;
 using CounterAssistant.Domain.Models;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Args;
@@ -18,11 +21,12 @@ using static CounterAssistant.Bot.BotCommands;
 
 namespace CounterAssistant.Bot
 {
-    public class BotService : IDisposable
+    public class BotService : IHostedService, IDisposable
     {
         private readonly ITelegramBotClient _botClient;
         private readonly IContextProvider _contextProvider;
         private readonly ICounterService _counterService;
+        private readonly IBotMessageFormatter _messageFormatter;
         private readonly ILogger<BotService> _logger;
         private readonly IMetricsRoot _metrics;
 
@@ -64,17 +68,18 @@ namespace CounterAssistant.Bot
             ResizeKeyboard = true
         };
 
-        public BotService(ITelegramBotClient botClient, IContextProvider contextProvider, ICounterService counterService, ILogger<BotService> logger, IMetricsRoot metrics)
+        public BotService(ITelegramBotClient botClient, IContextProvider contextProvider, ICounterService counterService, IBotMessageFormatter messageFormatter, ILogger<BotService> logger, IMetricsRoot metrics)
         {
             _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             _contextProvider = contextProvider ?? throw new ArgumentNullException(nameof(contextProvider));
             _counterService = counterService ?? throw new ArgumentNullException(nameof(counterService));
+            _messageFormatter = messageFormatter ?? throw new ArgumentNullException(nameof(messageFormatter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
         }
 
         [ExcludeFromCodeCoverage]
-        public async Task StartAsync()
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             _botClient.OnMessage += OnMessageHandler;
             _botClient.OnCallbackQuery += OnCallbackQueryHandler;
@@ -136,7 +141,7 @@ namespace CounterAssistant.Bot
                         if (context.CreateCounterFlow == null) context.StartCreateCounterFlow();
                         var result = context.CreateCounterFlow.Perform(message);
 
-                        if (!result.IsSuccess)
+                        if (!result.IsCompleted)
                         {
                             await _botClient.SendTextMessageAsync(context.ChatId, result.Message, replyMarkup: result.Buttons);
                         }
@@ -164,7 +169,7 @@ namespace CounterAssistant.Bot
                     {
                         var counters = await _counterService.GetUserCountersAsync(context.UserId);
                         context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
-                        await _botClient.SendTextMessageAsync(context.ChatId, text: "Ваши счётчики: \n\n" + GetCountersMessage(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
+                        await _botClient.SendTextMessageAsync(context.ChatId, text: _messageFormatter.GetDetailedCounters(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
                         break;
                     }
                     case BACK_COMMAND when context.Command == MANAGE_COUNTER_COMMAND:
@@ -194,7 +199,7 @@ namespace CounterAssistant.Bot
 
                         context.SetCurrentCommand(MANAGE_COUNTER_COMMAND);
 
-                        await _botClient.SendTextMessageAsync(context.ChatId, text: GetCounterMessage(context.SelectedCounter), parseMode: ParseMode.Html, replyMarkup: COUNTER_KEYBOARD);
+                        await _botClient.SendTextMessageAsync(context.ChatId, text: _messageFormatter.GetDetailedCounter(context.SelectedCounter), parseMode: ParseMode.Html, replyMarkup: COUNTER_KEYBOARD);
                         break;
                     }
                     case DECREMENT_COMMAND:
@@ -242,23 +247,17 @@ namespace CounterAssistant.Bot
             }
         }
 
-        private static string GetCounterMessage(Counter counter)
-        {
-            return $"<b>Счётчик:</b> {counter.Title.ToUpper()}\n<b>Значнение:</b> {counter.Amount}\n<b>Шаг:</b> {counter.Step}\n<b>Создан:</b> {counter.CreatedAt}\n<b>Обновлен последний раз:</b> {counter.LastModifiedAt}\n<b>Режим:</b> {(counter.IsManual ? "ручной" : "автоматический")}\n";
-        }
-
-        private static string GetCountersMessage(List<Counter> counters)
-        {
-            var sb = new StringBuilder();
-            counters.ForEach(x => sb.AppendLine(GetCounterMessage(x)));
-            return sb.ToString();
-        }
-
         private static ReplyKeyboardMarkup GetCounterKeyboard(List<Counter> counters)
         {
             var keyboard = counters.SelectMany(c => new List<List<KeyboardButton>> { new List<KeyboardButton> { new KeyboardButton($"{c.Title} - {c.Amount}") } }).ToList();
             keyboard.AddNewLineButton(BACK_COMMAND);
             return new ReplyKeyboardMarkup(keyboard) { ResizeKeyboard = true };
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            Dispose();
+            return Task.CompletedTask;
         }
 
         public void Dispose()

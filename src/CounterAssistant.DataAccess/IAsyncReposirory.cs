@@ -24,6 +24,7 @@ namespace CounterAssistant.DataAccess
     {
         protected readonly IMongoCollection<T> _db;
         protected readonly ILogger<AsyncRepository<T>> _logger;
+        protected readonly static FilterDefinition<T> DefaultFilter = Builders<T>.Filter.Empty;
 
         public AsyncRepository(IMongoCollection<T> db, ILogger<AsyncRepository<T>> logger)
         {
@@ -42,7 +43,6 @@ namespace CounterAssistant.DataAccess
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.ToString());
                 _logger.LogError(ex, "error during inserting entity {entity}", JsonConvert.SerializeObject(entity));
                 return false;
             }
@@ -50,9 +50,7 @@ namespace CounterAssistant.DataAccess
 
         public virtual async Task<IEnumerable<T>> FindManyAsync(FilterDefinition<T> filter)
         {
-            if (filter == null) throw new ArgumentNullException(nameof(filter));
-
-            return await _db.Find(filter).ToListAsync();
+            return await _db.Find(filter ?? DefaultFilter).ToListAsync();
         }
 
         public virtual async Task<T> FindOneAsync(FilterDefinition<T> filter)

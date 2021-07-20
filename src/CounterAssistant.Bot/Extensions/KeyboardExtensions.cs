@@ -13,9 +13,18 @@ namespace CounterAssistant.Bot.Extensions
 
         public static InlineKeyboardMarkup ToInlineButtons(this Dictionary<string, string> buttons)
         {
-            return new InlineKeyboardMarkup(buttons.Select(kvp => new InlineKeyboardButton { CallbackData = kvp.Key, Pay = false, Text = kvp.Value }));
-        }
+            var number = 4;
 
+            var lines = new List<IEnumerable<InlineKeyboardButton>>();
+
+            for(var i = 0; i < buttons.Count; i += number)
+            {
+                var line = buttons.Skip(i).Take(number).ToArray().Select(kvp => new InlineKeyboardButton { CallbackData = kvp.Key, Pay = false, Text = kvp.Value });
+                lines.Add(line);
+            }
+
+            return new InlineKeyboardMarkup(lines);
+        }
 
         //U+ should be replaced by 0x
         public static InlineKeyboardMarkup ToPaymentButton(string action, string text, string url)

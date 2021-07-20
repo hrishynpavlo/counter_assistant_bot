@@ -2,7 +2,9 @@
 using App.Metrics.Counter;
 using CounterAssistant.Bot;
 using CounterAssistant.Bot.Flows;
+using CounterAssistant.Bot.Formatters;
 using CounterAssistant.DataAccess;
+using CounterAssistant.Domain.Models;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
@@ -33,13 +35,13 @@ namespace CounterAssistant.UnitTests.Bot
 
             var counterStore = new Mock<ICounterService>();
             counterStore.Setup(x => x.GetUserCountersAsync(It.IsAny<int>())).ReturnsAsync(new List<Domain.Models.Counter>());
-            counterStore.Setup(x => x.GetCounterByBotRequstAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(new Domain.Models.Counter("test", 1, 1, true));
+            counterStore.Setup(x => x.GetCounterByBotRequstAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(new Domain.Models.Counter("test", 1, 1, true, CounterUnit.Time));
 
             var logger = new Mock<ILogger<BotService>>();
             var botClient = new Mock<ITelegramBotClient>();
 
             _provider = new Mock<IContextProvider>();
-            _bot = new BotService(botClient.Object, _provider.Object, counterStore.Object, logger.Object, _metrics.Object);
+            _bot = new BotService(botClient.Object, _provider.Object, counterStore.Object, new BotMessageFormatter(), logger.Object, _metrics.Object);
         }
 
         [Test]
@@ -109,6 +111,12 @@ namespace CounterAssistant.UnitTests.Bot
             //step 4: set counter type
             var type = CounterType.Automatic;
             await _bot.HandleRequest(CreateRequest(type.ToString()));
+            Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
+            Assert.AreEqual(CreateFlowSteps.SetCounterUnit, context.CreateCounterFlow.State);
+
+            //step 5: set counter unit
+            var unit = CounterUnit.Day;
+            await _bot.HandleRequest(CreateRequest(unit.ToString()));
             Assert.AreEqual(BotCommands.SELECT_COUNTER_COMMAND, context.Command);
             Assert.IsNull(context.CreateCounterFlow);
         }
@@ -220,7 +228,7 @@ namespace CounterAssistant.UnitTests.Bot
             var amount = 1;
             ushort step = 1;
 
-            context.SelectCounter(new Domain.Models.Counter("test", amount, step, true));
+            context.SelectCounter(new Domain.Models.Counter("test", amount, step, true, CounterUnit.Time));
 
             _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
@@ -241,7 +249,7 @@ namespace CounterAssistant.UnitTests.Bot
                 ChatId = 1,
             };
 
-            context.SelectCounter(new Domain.Models.Counter("test", 100, 1, true));
+            context.SelectCounter(new Domain.Models.Counter("test", 100, 1, true, CounterUnit.Time));
             var lastModifiedBeforeUpdate = context.SelectedCounter.LastModifiedAt;
 
             _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
@@ -263,7 +271,7 @@ namespace CounterAssistant.UnitTests.Bot
                 ChatId = 1
             };
 
-            context.SelectCounter(new Domain.Models.Counter("test", 0, 1, true));
+            context.SelectCounter(new Counter("test", 0, 1, true, CounterUnit.Time));
 
             _provider.Setup(x => x.GetContextAsync(It.IsAny<BotRequest>())).ReturnsAsync(context);
 
@@ -320,7 +328,7 @@ namespace CounterAssistant.UnitTests.Bot
                 {
                     Id = id
                 },
-                From = new User
+                From = new Telegram.Bot.Types.User
                 {
                     Id = id,
                     FirstName = "test",
