@@ -49,7 +49,7 @@ namespace CounterAssistant.UnitTests.Bot
         }
 
         [Test]
-        public void Restore_WithoutFlowAndCounter_SuccessTest()
+        public void Restore_WithoutParams_SuccessTest()
         {
             //ARRANGE
             var user = new User
@@ -80,7 +80,7 @@ namespace CounterAssistant.UnitTests.Bot
         }
 
         [Test]
-        public void Restore_WithFlowAndCounter_SuccessTest()
+        public void Restore_WithParams_SuccessTest()
         {
             //ARRANGE
             var counterId = Guid.NewGuid();
@@ -101,7 +101,7 @@ namespace CounterAssistant.UnitTests.Bot
                 }
             };
 
-            var counter = new Counter(counterId, nameof(Restore_WithFlowAndCounter_SuccessTest), 1, 1, DateTime.UtcNow, null, true, CounterUnit.Time);
+            var counter = new Counter(counterId, nameof(Restore_WithParams_SuccessTest), 1, 1, DateTime.UtcNow, null, true, CounterUnit.Time);
 
             //ACT
             var context = ChatContext.Restore(user, counter);

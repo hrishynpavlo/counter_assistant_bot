@@ -2,6 +2,7 @@
 using App.Metrics.Counter;
 using CounterAssistant.Bot;
 using CounterAssistant.Bot.Flows;
+using CounterAssistant.Bot.Formatters;
 using CounterAssistant.DataAccess;
 using CounterAssistant.Domain.Models;
 using Microsoft.Extensions.Logging;
@@ -40,7 +41,7 @@ namespace CounterAssistant.UnitTests.Bot
             var botClient = new Mock<ITelegramBotClient>();
 
             _provider = new Mock<IContextProvider>();
-            _bot = new BotService(botClient.Object, _provider.Object, counterStore.Object, logger.Object, _metrics.Object);
+            _bot = new BotService(botClient.Object, _provider.Object, counterStore.Object, new BotMessageFormatter(), logger.Object, _metrics.Object);
         }
 
         [Test]
@@ -110,6 +111,12 @@ namespace CounterAssistant.UnitTests.Bot
             //step 4: set counter type
             var type = CounterType.Automatic;
             await _bot.HandleRequest(CreateRequest(type.ToString()));
+            Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
+            Assert.AreEqual(CreateFlowSteps.SetCounterUnit, context.CreateCounterFlow.State);
+
+            //step 5: set counter unit
+            var unit = CounterUnit.Day;
+            await _bot.HandleRequest(CreateRequest(unit.ToString()));
             Assert.AreEqual(BotCommands.SELECT_COUNTER_COMMAND, context.Command);
             Assert.IsNull(context.CreateCounterFlow);
         }

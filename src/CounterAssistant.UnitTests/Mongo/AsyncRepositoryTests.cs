@@ -1,6 +1,7 @@
 ﻿using MongoDB.Driver;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace CounterAssistant.UnitTests.Mongo
@@ -36,6 +37,52 @@ namespace CounterAssistant.UnitTests.Mongo
             var byGuid = await _repository.FindOneAsync(Builders<TestEntity>.Filter.Eq(x => x.GuidField, guid));
             Assert.IsNotNull(byGuid);
             Assert.AreEqual(entity, byGuid);
+        }
+
+        [Test]
+        public void CreateOneAsync_NullEntity_ThrowsArgumentNullException()
+        {
+            //ACT
+            var act = new AsyncTestDelegate(async () => await _repository.CreateOneAsync(null));
+
+            //ASSERT
+            Assert.ThrowsAsync<ArgumentNullException>(act);
+        }
+
+        [Test]
+        public void RemoveOneAsync_NullFilter_ThrowsArgumentNullException()
+        {
+            //ACT
+            var act = new AsyncTestDelegate(async () => await _repository.RemoveOneAsync(null));
+
+            //ASSERT
+            Assert.ThrowsAsync<ArgumentNullException>(act);
+        }
+
+        [Test]
+        public void UpdateManyAsync_NullDescriptor_ThrowsArgumentNullException()
+        {
+            //ACT
+            var act = new AsyncTestDelegate(async () => await _repository.UpdateManyAsync(null));
+
+            //ASSERT
+            Assert.ThrowsAsync<ArgumentNullException>(act);
+        }
+
+        [TestCaseSource(nameof(NullParameterTestCases))]
+        public void UpdateOneAsync_NullParameter_ThrowsArgumentException(FilterDefinition<TestEntity> filter, UpdateDefinition<TestEntity> update)
+        {
+            //ACT
+            var act = new AsyncTestDelegate(async () => await _repository.UpdateOneAsync(filter, update));
+
+            //ASSERT
+            Assert.ThrowsAsync<ArgumentNullException>(act);
+        }
+
+        private static IEnumerable<TestCaseData> NullParameterTestCases()
+        {
+            yield return new TestCaseData(null, null);
+            yield return new TestCaseData(FilterDefinition<TestEntity>.Empty, null);
         }
     }
 
