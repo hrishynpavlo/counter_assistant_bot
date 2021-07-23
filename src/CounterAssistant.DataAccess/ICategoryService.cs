@@ -1,4 +1,5 @@
 ﻿using CounterAssistant.DataAccess.DTO;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace CounterAssistant.DataAccess
 {
     public interface ICategoryService
     {
-        Task<string[]> GetCategories();
+        Task<List<string>> GetCategories();
         Task<string> GetCategoryBySeller(string seller);
         Task AddMatch(string category, string seller);
     }
@@ -18,20 +19,22 @@ namespace CounterAssistant.DataAccess
     public class CategoryService : ICategoryService
     {
         private readonly IMongoCollection<FinancialCategoryDto> _db;
+        private readonly ILogger<CategoryService> _logger;
 
-        public CategoryService(IMongoCollection<FinancialCategoryDto> db)
+        public CategoryService(IMongoCollection<FinancialCategoryDto> db, ILogger<CategoryService> logger)
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task AddMatch(string category, string seller)
+        public async Task AddMatch(string category, string seller)
         {
             throw new NotImplementedException();
         }
 
-        public Task<string[]> GetCategories()
+        public async Task<List<string>> GetCategories()
         {
-            throw new NotImplementedException();
+            return await _db.Find(x => true).Project(x => x.Name).ToListAsync();
         }
 
         public Task<string> GetCategoryBySeller(string seller)
