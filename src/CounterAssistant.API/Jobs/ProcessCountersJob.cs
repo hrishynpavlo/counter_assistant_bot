@@ -50,18 +50,17 @@ namespace CounterAssistant.API.Jobs
                         continue;
                     }
 
-                    var message = new StringBuilder();
-
                     foreach(var counter in group.Value)
                     {
                         counter.Increment();
 
                         _logger.LogInformation("Counter {counterId} proccesed in background job {job} for user {userId}", counter.Id, nameof(ProcessCountersJob), user.TelegramId);
-                        message.AppendLine($"Счётчик <b>{counter.Title.ToUpper()}</b> автоматически увеличен на <b>{counter.Step}</b>.\n<b>{counter.Title.ToUpper()}: {counter.Amount}</b>\n");
                     }
 
                     await _counterService.BulkUpdateAmountAsync(group.Value);
-                    await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message.ToString(), parseMode: ParseMode.Html, disableNotification: true);
+
+                    var message = _messageFormatter.GetDetailedCounters(group.Value);
+                    await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message, parseMode: ParseMode.Html, disableNotification: true);
                 }
 
                 _metrics.Measure.Counter.Increment(ApiMetrics.SucessfullyFinishedJobs, Tag);

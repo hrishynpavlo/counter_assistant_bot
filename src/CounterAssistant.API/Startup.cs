@@ -16,8 +16,11 @@ using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
+using Newtonsoft.Json.Linq;
 using Quartz;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using Telegram.Bot;
 
@@ -60,6 +63,23 @@ namespace CounterAssistant.API
                 var client = new MongoClient(appSettings.MongoHost);
                 return client.GetDatabase(appSettings.MongoDatabase);
             });
+
+            services.AddSingleton<IMongoCollection<FinancialCategoryDto>>(provider =>
+            {
+                var mongo = provider.GetService<IMongoDatabase>();
+                var needsSeeding = !mongo.ListCollectionNames().ToList().Contains(appSettings.MongoFinancialCategoryCollection);
+                var collection = mongo.GetCollection<FinancialCategoryDto>(appSettings.MongoFinancialCategoryCollection);
+
+                if (needsSeeding)
+                {
+                    var seedJson = File.ReadAllText("categories-seed.json");
+                    var data = JObject.Parse(seedJson)["data"].ToObject<IEnumerable<string>>().Select(x => new FinancialCategoryDto { Name = x, Sellers = new HashSet<string>() });
+                    collection.InsertMany(data);
+                }
+
+                return collection;
+            });
+
             services.AddSingleton<IMongoCollection<MonobankTransaction>>(provider => 
             {
                 var mongo = provider.GetService<IMongoDatabase>();
@@ -85,6 +105,8 @@ namespace CounterAssistant.API
 
                 return collection;
             });
+
+            
 
             services.AddSingleton<ContextProviderSettings>(_ => new ContextProviderSettings 
             { 
