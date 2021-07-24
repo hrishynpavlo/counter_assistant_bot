@@ -3,8 +3,6 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CounterAssistant.DataAccess
@@ -29,7 +27,8 @@ namespace CounterAssistant.DataAccess
 
         public async Task AddMatch(string category, string seller)
         {
-            throw new NotImplementedException();
+            var update = Builders<FinancialCategoryDto>.Update.AddToSet(x => x.Sellers, seller);
+            await _db.UpdateOneAsync(x => x.Name == category, update);
         }
 
         public async Task<List<string>> GetCategories()
@@ -37,9 +36,9 @@ namespace CounterAssistant.DataAccess
             return await _db.Find(x => true).Project(x => x.Name).ToListAsync();
         }
 
-        public Task<string> GetCategoryBySeller(string seller)
+        public async Task<string> GetCategoryBySeller(string seller)
         {
-            throw new NotImplementedException();
+            return await _db.Find(x => x.Sellers.Contains(seller)).Project(x => x.Name).FirstOrDefaultAsync();
         }
     }
 }
