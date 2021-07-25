@@ -1,0 +1,94 @@
+﻿{
+  "categories": [
+    {
+      "name": "Grocery",
+      "sellers": [
+        "Мегамаркет",
+        "Сільпо",
+        "FOP SENYA",
+        "FOODSTORY FRANCH KVART",
+        "Ашан",
+        "Пчёлка Маркет",
+        "Novus",
+        "FOP Mansurov Umar",
+        "SelectO"
+      ]
+    },
+    {
+      "name": "House",
+      "sellers": [ "Епіцентр", "Виктория Уборка" ]
+    },
+    {
+      "name": "Beauty",
+      "sellers": [ "Єгор", "С." ]
+    },
+    {
+      "name": "Healthcare",
+      "sellers": [ "Аптека \"Белая Ромашка\"" ]
+    },
+    {
+      "name": "Work",
+      "sellers": []
+    },
+    {
+      "name": "Sport & Hobbies",
+      "sellers": [ "Дима Тренер", "workshop" ]
+    },
+    {
+      "name": "Studying",
+      "sellers": [ "Эльвина Преподаватель Англ" ]
+    },
+    {
+      "name": "Travelling",
+      "sellers": []
+    },
+    {
+      "name": "Car",
+      "sellers": [ "OKKO" ]
+    },
+    {
+      "name": "Entertainment",
+      "sellers": [ "Паркинг Ocean Plaza", "ASTAKHOV LYMONADY", "Планета Кіно", "Кіномаркет Планета Кіно", "Kavjarnja", "Bird", "Ocean Plaza" ]
+    },
+    {
+      "name": "Transport",
+      "sellers": [ "Bolt", "Uber", "Укрзалізниця" ]
+    },
+    {
+      "name": "Gifts",
+      "sellers": []
+    },
+    {
+      "name": "Bills & Fees",
+      "sellers": []
+    },
+    {
+      "name": "Family & Personal",
+      "sellers": []
+    },
+    {
+      "name": "Clothes",
+      "sellers": [ "Інтертоп", "H&M", "Brocard" ]
+    },
+    {
+      "name": "Restaurants",
+      "sellers": [ "HOMECAFE" ]
+    },
+    {
+      "name": "Pets",
+      "sellers": [ "MasterZoo" ]
+    },
+    {
+      "name": "Food Delievery",
+      "sellers": [ "Bolt Food", "Rocket", "LIQPAY*FOP Pilipenko O" ]
+    },
+    {
+      "name": "Subscriptions",
+      "sllers": [ "Netflix" ]
+    },
+    {
+      "name": "Other",
+      "sellers": []
+    }
+  ]
+}

@@ -13,6 +13,7 @@ namespace CounterAssistant.UnitTests.Mongo
     public abstract class MongoBaseTest<T> where T: class
     {
         private MongoDbRunner _runner;
+        protected IMongoDatabase _db; 
         protected IAsyncRepository<T> _repository;
 
         [OneTimeSetUp]
@@ -20,8 +21,8 @@ namespace CounterAssistant.UnitTests.Mongo
         {
             _runner = MongoDbRunner.Start();
             MongoDefaults.GuidRepresentation = GuidRepresentation.Standard;
-            var database = new MongoClient(_runner.ConnectionString).GetDatabase("counter-assistant-tests");
-            var collection = database.GetCollection<T>(Guid.NewGuid().ToString());
+            _db = new MongoClient(_runner.ConnectionString).GetDatabase("counter-assistant-tests");
+            var collection = _db.GetCollection<T>(Guid.NewGuid().ToString());
             var logger = new Mock<ILogger<AsyncRepository<T>>>();
 
             _repository = new AsyncRepository<T>(collection, logger.Object);

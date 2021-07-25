@@ -16,6 +16,8 @@ namespace CounterAssistant.DataAccess
 
     public class CategoryService : ICategoryService
     {
+        private readonly static UpdateOptions _updateOptions = new UpdateOptions { IsUpsert = true };
+
         private readonly IMongoCollection<FinancialCategoryDto> _db;
         private readonly ILogger<CategoryService> _logger;
 
@@ -28,7 +30,7 @@ namespace CounterAssistant.DataAccess
         public async Task AddMatch(string category, string seller)
         {
             var update = Builders<FinancialCategoryDto>.Update.AddToSet(x => x.Sellers, seller);
-            await _db.UpdateOneAsync(x => x.Name == category, update);
+            var result = await _db.UpdateOneAsync(x => x.Name == category, update, _updateOptions);
         }
 
         public async Task<List<string>> GetCategories()
@@ -38,7 +40,8 @@ namespace CounterAssistant.DataAccess
 
         public async Task<string> GetCategoryBySeller(string seller)
         {
-            return await _db.Find(x => x.Sellers.Contains(seller)).Project(x => x.Name).FirstOrDefaultAsync();
+            var result = await _db.Find(x => x.Sellers.Contains(seller)).Project(x => x.Name).FirstOrDefaultAsync();
+            return result ?? "Other";
         }
     }
 }

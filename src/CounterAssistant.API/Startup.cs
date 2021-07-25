@@ -16,6 +16,7 @@ using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Quartz;
 using System.Collections.Generic;
@@ -72,8 +73,8 @@ namespace CounterAssistant.API
 
                 if (needsSeeding)
                 {
-                    var seedJson = File.ReadAllText("categories-seed.json");
-                    var data = JObject.Parse(seedJson)["data"].ToObject<IEnumerable<string>>().Select(x => new FinancialCategoryDto { Name = x, Sellers = new HashSet<string>() });
+                    var seedJson = File.ReadAllText("seed.json");
+                    var data = JsonConvert.DeserializeObject<IEnumerable<FinancialCategoryDto>>(seedJson);
                     collection.InsertMany(data);
                 }
 
