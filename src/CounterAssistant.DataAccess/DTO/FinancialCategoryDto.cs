@@ -11,6 +11,6 @@ namespace CounterAssistant.DataAccess.DTO
 
         public string Name { get; set; }
 
-        public HashSet<string> Sellers { get; set; }
+        public string[] Sellers { get; set; }
     }
 }
