@@ -1,19 +1,8 @@
 ﻿using CounterAssistant.DataAccess;
-using CsvHelper;
-using CsvHelper.Configuration;
-using CsvHelper.Configuration.Attributes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace CounterAssistant.API.Controllers
@@ -22,68 +11,21 @@ namespace CounterAssistant.API.Controllers
     [Route("api/financial-tracker")]
     public class FinancialTrackerController : ControllerBase
     {
-        private readonly IAsyncRepository<MonobankTransaction> _repository;
+        private readonly IFinancialTrackerImporter _importer;
         private readonly ILogger<FinancialTrackerController> _logger;
-        private readonly IMongoCollection<SpendeeRecord> _db;
 
-        public FinancialTrackerController(ILogger<FinancialTrackerController> logger, IAsyncRepository<MonobankTransaction> repository, IMongoCollection<SpendeeRecord> db)
+        public FinancialTrackerController(IFinancialTrackerImporter importer, ILogger<FinancialTrackerController> logger)
         {
-            _repository = repository;
-            _logger = logger;
-            _db = db;
+            _importer = importer ?? throw new ArgumentNullException(nameof(importer));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         [HttpPost("spendee-import")]
-        public async Task<IActionResult> ImportSpendee([FromForm] IFormFile data, [FromQuery] DateTime date)
+        public async Task<IActionResult> ImportSpendee(IFormFile data, [FromHeader(Name = "X-TELEGRAM-USER-ID")] int telegramUserId)
         {
-            using var reader = new StreamReader(data.OpenReadStream());
-            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture));
+            var created = await _importer.ImportAsync(data.OpenReadStream(), telegramUserId);
 
-            var records = new List<SpendeeRecord>();
-
-            foreach(var record in csv.GetRecords<SpendeeRecord>().Where(x => x.Date > date))
-            {
-                records.Add(record);
-            }
-
-            await _db.InsertManyAsync(records);
-
-            return Ok(new { created = records.Count });
+            return Ok(new { telegramUserId, created });
         }
-
-        [HttpPost("monobank")]
-        public async Task<IActionResult> RecieveTransaction([FromBody] MonobankTransaction transaction)
-        {
-            _logger.LogInformation("MONOBANK TRANSACTION: \n{transaction}", JsonConvert.SerializeObject(transaction, Formatting.Indented));
-
-            try
-            {
-                await _repository.CreateOneAsync(transaction);
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError(ex, "Exception during saving monobank transaction in mongo");
-            }
-
-            return Ok();
-        }
-    }
-
-    public class SpendeeRecord
-    {
-        [BsonId]
-        public ObjectId Id { get; set; }
-
-        [Index(0)]
-        public DateTime Date { get; set; }
-
-        [Index(3)]
-        public string Category { get; set; }
-
-        [Index(4)]
-        public decimal Amount { get; set; }
-
-        [Index(6)]
-        public string Note { get; set; }
     }
 }

@@ -107,7 +107,7 @@ namespace CounterAssistant.API
                 return collection;
             });
 
-            
+            services.AddSingleton<IFinancialTrackerImporter, SpendeeImporter>();
 
             services.AddSingleton<ContextProviderSettings>(_ => new ContextProviderSettings 
             { 
@@ -188,8 +188,6 @@ namespace CounterAssistant.API
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CounterAssistant.API v1"));
-
-            app.UseHttpsRedirection();
 
             app.UseRouting();
 
