@@ -22,7 +22,11 @@ namespace CounterAssistant.API.Controllers
         [HttpPost("recieveTransaction")]
         public IActionResult RecieveTransaction([FromBody] MonobankTransaction transaction)
         {
-            _reciever.Recieve(transaction);
+            if(transaction.Data.StatementItem.Amount < 0)
+            {
+                _reciever.Recieve(transaction);
+            }
+
             return Ok();
         }
     }
