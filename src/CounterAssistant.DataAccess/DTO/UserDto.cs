@@ -15,6 +15,8 @@ namespace CounterAssistant.DataAccess.DTO
 
         public UserBotInfo BotInfo { get; set; }
 
+        public string[] MonobankAccounts { get; set; }
+
         public User ToDomain()
         {
             return new User
@@ -22,7 +24,8 @@ namespace CounterAssistant.DataAccess.DTO
                 TelegramId = Id,
                 FirstName = FirstName,
                 LastName = LastName,
-                BotInfo = BotInfo
+                BotInfo = BotInfo,
+                MonobankAccounts = MonobankAccounts
             }; 
         }
 
@@ -33,7 +36,8 @@ namespace CounterAssistant.DataAccess.DTO
                 Id = user.TelegramId,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                BotInfo = user.BotInfo
+                BotInfo = user.BotInfo,
+                MonobankAccounts = user.MonobankAccounts
             };
         }
     }

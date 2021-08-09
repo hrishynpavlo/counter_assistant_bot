@@ -16,10 +16,8 @@ using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Quartz;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -71,12 +69,16 @@ namespace CounterAssistant.API
                 var needsSeeding = !mongo.ListCollectionNames().ToList().Contains(appSettings.MongoFinancialCategoryCollection);
                 var collection = mongo.GetCollection<FinancialCategoryDto>(appSettings.MongoFinancialCategoryCollection);
 
-                if (needsSeeding)
+                try
                 {
-                    var seedJson = File.ReadAllText("seed.json");
-                    var data = JsonConvert.DeserializeObject<IEnumerable<FinancialCategoryDto>>(seedJson);
-                    collection.InsertMany(data);
+                    if (needsSeeding)
+                    {
+                        var seedJson = JToken.Parse(File.ReadAllText("seed.json"));
+                        var data = seedJson["categories"].ToObject<FinancialCategoryDto[]>();
+                        collection.InsertMany(data);
+                    }
                 }
+                catch { }
 
                 return collection;
             });
@@ -119,6 +121,7 @@ namespace CounterAssistant.API
             services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(appSettings.TelegramBotAccessToken));
 
             services.AddHostedService<BotService>();
+            services.AddHostedService<MonobankRecieverService>();
 
             services.AddQuartz(options => 
             {
@@ -180,6 +183,9 @@ namespace CounterAssistant.API
             services.AddSingleton<IUserService, UserService>();
 
             services.AddSingleton<IBotMessageFormatter, BotMessageFormatter>();
+
+            services.AddSingleton<FinancialTrackerDbFactory>();
+            services.AddSingleton(typeof(IPipeline<>), typeof(ReactivePipeline<>));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

@@ -18,6 +18,6 @@ namespace CounterAssistant.DataAccess.DTO
 
         public string Title { get; set; }
         
-        public string Commnets { get; set; }
+        public string Comments { get; set; }
     }
 }

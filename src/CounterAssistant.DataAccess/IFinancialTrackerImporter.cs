@@ -19,7 +19,7 @@ namespace CounterAssistant.DataAccess
 
     public class SpendeeImporter : IFinancialTrackerImporter
     {
-        private readonly IMongoDatabase _db;
+        private readonly FinancialTrackerDbFactory _dbFactory;
 
         private static Dictionary<string, string> _categoryMapping = new Dictionary<string, string>
         {
@@ -32,14 +32,14 @@ namespace CounterAssistant.DataAccess
             ["Покупки"] = "Clothes"
         };
 
-        public SpendeeImporter(IMongoDatabase db)
+        public SpendeeImporter(FinancialTrackerDbFactory dbFactory)
         {
-            _db = db ?? throw new ArgumentNullException(nameof(db));
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
         public async Task<long> ImportAsync(Stream importStream, int telegramUserId)
         {
-            var db = _db.GetCollection<FinancialTransaction>($"financial-tracker-transactions-{telegramUserId}");
+            var db = _dbFactory.Create(telegramUserId);
             var records = new List<FinancialTransaction>();
 
             var date = await db.Find(x => true).SortByDescending(x => x.Date).Limit(1).Project(x => x.Date).FirstOrDefaultAsync();
@@ -55,7 +55,7 @@ namespace CounterAssistant.DataAccess
                     Category = _categoryMapping.TryGetValue(record.Category, out var category) ? category : record.Category,
                     Date = record.Date.ToUniversalTime(),
                     Title = record.Category,
-                    Commnets = record.Note
+                    Comments = record.Note
                 });
              }
 
