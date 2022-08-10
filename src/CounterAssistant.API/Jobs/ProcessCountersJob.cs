@@ -60,7 +60,16 @@ namespace CounterAssistant.API.Jobs
                     await _counterService.BulkUpdateAmountAsync(group.Value);
 
                     var message = _messageFormatter.GetDetailedCounters(group.Value);
-                    await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message, parseMode: ParseMode.Html, disableNotification: true);
+
+                    try
+                    {
+                        await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message, parseMode: ParseMode.Html, disableNotification: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed sending telegram info message for user {@user}", user.BotInfo);
+                    }
+
                 }
 
                 _metrics.Measure.Counter.Increment(ApiMetrics.SucessfullyFinishedJobs, Tag);
@@ -69,7 +78,6 @@ namespace CounterAssistant.API.Jobs
             {
                 _logger.LogError(ex, "Error during execution job {job}", nameof(ProcessCountersJob));
                 _metrics.Measure.Counter.Increment(ApiMetrics.FailedJobs, Tag);
-                throw;
             }
             finally
             {
