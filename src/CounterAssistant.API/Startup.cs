@@ -63,32 +63,6 @@ namespace CounterAssistant.API
                 return client.GetDatabase(appSettings.MongoDatabase);
             });
 
-            services.AddSingleton<IMongoCollection<FinancialCategoryDto>>(provider =>
-            {
-                var mongo = provider.GetService<IMongoDatabase>();
-                var needsSeeding = !mongo.ListCollectionNames().ToList().Contains(appSettings.MongoFinancialCategoryCollection);
-                var collection = mongo.GetCollection<FinancialCategoryDto>(appSettings.MongoFinancialCategoryCollection);
-
-                try
-                {
-                    if (needsSeeding)
-                    {
-                        var seedJson = JToken.Parse(File.ReadAllText("seed.json"));
-                        var data = seedJson["categories"].ToObject<FinancialCategoryDto[]>();
-                        collection.InsertMany(data);
-                    }
-                }
-                catch { }
-
-                return collection;
-            });
-
-            services.AddSingleton<IMongoCollection<MonobankTransaction>>(provider => 
-            {
-                var mongo = provider.GetService<IMongoDatabase>();
-                return mongo.GetCollection<MonobankTransaction>(appSettings.MongoMonobankTransactionCollection);
-            });
-
             services.AddSingleton<IMongoCollection<UserDto>>(provider => 
             {
                 var mongo = provider.GetService<IMongoDatabase>();
@@ -109,8 +83,6 @@ namespace CounterAssistant.API
                 return collection;
             });
 
-            services.AddSingleton<IFinancialTrackerImporter, SpendeeImporter>();
-
             services.AddSingleton<ContextProviderSettings>(_ => new ContextProviderSettings 
             { 
                 ExpirationTime = appSettings.CacheExpirationTime,
@@ -121,7 +93,6 @@ namespace CounterAssistant.API
             services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(appSettings.TelegramBotAccessToken));
 
             services.AddHostedService<BotService>();
-            services.AddHostedService<MonobankRecieverService>();
 
             services.AddQuartz(options => 
             {
@@ -183,9 +154,6 @@ namespace CounterAssistant.API
             services.AddSingleton<IUserService, UserService>();
 
             services.AddSingleton<IBotMessageFormatter, BotMessageFormatter>();
-
-            services.AddSingleton<FinancialTrackerDbFactory>();
-            services.AddSingleton(typeof(IPipeline<>), typeof(ReactivePipeline<>));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
