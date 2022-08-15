@@ -7,6 +7,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
 
 namespace CounterAssistant.API.Jobs
@@ -64,6 +65,11 @@ namespace CounterAssistant.API.Jobs
                     try
                     {
                         await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message, parseMode: ParseMode.Html, disableNotification: true);
+                    }
+                    catch(ForbiddenException fex)
+                    {
+                        //todo: handle blocked by users
+                        _logger.LogWarning("Bot was blocked by chatId: {chatId}", user.BotInfo.ChatId);
                     }
                     catch (Exception ex)
                     {
