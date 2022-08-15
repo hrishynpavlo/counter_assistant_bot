@@ -11,8 +11,6 @@ namespace CounterAssistant.Domain.Models
 
         public UserBotInfo BotInfo { get; set; }
 
-        public string[] MonobankAccounts { get; set; }
-
         public static User Default(int id, long chatId, string firstName, string lastName, string userName, string command)
         {
             return new User
@@ -25,8 +23,7 @@ namespace CounterAssistant.Domain.Models
                     ChatId = chatId,
                     LastCommand = command,
                     UserName = userName
-                },
-                MonobankAccounts = new string[0]
+                }
             };
         }
     }

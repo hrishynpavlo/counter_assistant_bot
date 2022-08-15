@@ -15,8 +15,6 @@ namespace CounterAssistant.DataAccess.DTO
 
         public UserBotInfo BotInfo { get; set; }
 
-        public string[] MonobankAccounts { get; set; }
-
         public User ToDomain()
         {
             return new User
@@ -25,7 +23,6 @@ namespace CounterAssistant.DataAccess.DTO
                 FirstName = FirstName,
                 LastName = LastName,
                 BotInfo = BotInfo,
-                MonobankAccounts = MonobankAccounts
             }; 
         }
 
@@ -37,7 +34,6 @@ namespace CounterAssistant.DataAccess.DTO
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 BotInfo = user.BotInfo,
-                MonobankAccounts = user.MonobankAccounts
             };
         }
     }
