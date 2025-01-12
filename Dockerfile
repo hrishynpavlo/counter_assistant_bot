@@ -13,4 +13,5 @@ WORKDIR /app
 ARG APP_NAME="CounterAssistant.API"
 COPY --from=build-env /build/$APP_NAME/bin/Release/net5.0/publish /app
 COPY --from=build-env /build/codecoverage/Summary.txt /app
-CMD ASPNETCORE_URLS=http://*:$PORT dotnet CounterAssistant.API.dll
+CMD ASPNETCORE_URLS=http://*:$PORT 
+ENTRYPOINT ["dotnet", "CounterAssistant.API.dll"]
