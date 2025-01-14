@@ -12,10 +12,10 @@ namespace CounterAssistant.DataAccess
     {
         Task CreateAsync(User user);
 
-        Task<User> GetUserByIdAsync(int id);
-        Task<Dictionary<int, User>> GetUsersByIdsAsync(IEnumerable<int> ids);
+        Task<User> GetUserByIdAsync(long id);
+        Task<Dictionary<long, User>> GetUsersByIdsAsync(IEnumerable<long> ids);
 
-        Task UpdateUserChatInfoAsync(int userId, UserBotInfo chatInfo);
+        Task UpdateUserChatInfoAsync(long userId, UserBotInfo chatInfo);
     }
 
     public class UserService : IUserService
@@ -33,7 +33,7 @@ namespace CounterAssistant.DataAccess
             await _repository.CreateOneAsync(dbUser);
         }
 
-        public async Task<User> GetUserByIdAsync(int id)
+        public async Task<User> GetUserByIdAsync(long id)
         {
             var filter = Builders<UserDto>.Filter.Eq(x => x.Id, id);
             var user = await _repository.FindOneAsync(filter);
@@ -41,7 +41,7 @@ namespace CounterAssistant.DataAccess
             return user?.ToDomain();
         }
 
-        public async Task<Dictionary<int, User>> GetUsersByIdsAsync(IEnumerable<int> ids)
+        public async Task<Dictionary<long, User>> GetUsersByIdsAsync(IEnumerable<long> ids)
         {
             var filter = Builders<UserDto>.Filter.In(x => x.Id, ids);
             var users = await _repository.FindManyAsync(filter);
@@ -49,7 +49,7 @@ namespace CounterAssistant.DataAccess
             return users.Select(u => u.ToDomain()).ToDictionary(k => k.TelegramId);
         }
 
-        public async Task UpdateUserChatInfoAsync(int userId, UserBotInfo chatInfo)
+        public async Task UpdateUserChatInfoAsync(long userId, UserBotInfo chatInfo)
         {
             var filter = Builders<UserDto>.Filter.Eq(x => x.Id, userId);
             var update = Builders<UserDto>.Update

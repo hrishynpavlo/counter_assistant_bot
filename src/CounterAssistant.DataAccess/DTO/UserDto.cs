@@ -7,8 +7,8 @@ namespace CounterAssistant.DataAccess.DTO
     public class UserDto
     {
         [BsonId]
-        [BsonRepresentation(BsonType.Int32)]
-        public int Id { get; set; }
+        [BsonRepresentation(BsonType.Int64)]
+        public long Id { get; set; }
 
         public string FirstName { get; set; }
         public string LastName { get; set; }

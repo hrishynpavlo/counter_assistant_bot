@@ -5,13 +5,13 @@ namespace CounterAssistant.Domain.Models
 {
     public class User
     {
-        public int TelegramId { get; set; }
+        public long TelegramId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
 
         public UserBotInfo BotInfo { get; set; }
 
-        public static User Default(int id, long chatId, string firstName, string lastName, string userName, string command)
+        public static User Default(long id, long chatId, string firstName, string lastName, string userName, string command)
         {
             return new User
             {

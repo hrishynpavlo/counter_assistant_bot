@@ -11,12 +11,12 @@ namespace CounterAssistant.DataAccess
 {
     public interface ICounterService
     {
-        Task CreateAsync(Counter counter, int userId);
+        Task CreateAsync(Counter counter, long userId);
 
         Task<Counter> GetCounterByIdAsync(Guid id);
-        Task<Counter> GetCounterByBotRequstAsync(int userId, string counterName);
-        Task<List<Counter>> GetUserCountersAsync(int userId);
-        Task<Dictionary<int, Counter[]>> GetCountersForDailyUpdateAsync();
+        Task<Counter> GetCounterByBotRequstAsync(long userId, string counterName);
+        Task<List<Counter>> GetUserCountersAsync(long userId);
+        Task<Dictionary<long, Counter[]>> GetCountersForDailyUpdateAsync();
 
         Task UpdateAmountAsync(Counter counter);
         Task BulkUpdateAmountAsync(IEnumerable<Counter> counters);
@@ -43,13 +43,13 @@ namespace CounterAssistant.DataAccess
             await _repository.UpdateManyAsync(update);
         }
 
-        public async Task CreateAsync(Counter counter, int userId)
+        public async Task CreateAsync(Counter counter, long userId)
         {
             var dbCounter = CounterDto.FromDomain(counter, userId);
             await _repository.CreateOneAsync(dbCounter);
         }
 
-        public async Task<Counter> GetCounterByBotRequstAsync(int userId, string counterName)
+        public async Task<Counter> GetCounterByBotRequstAsync(long userId, string counterName)
         {
             var userFilter = Builders<CounterDto>.Filter.Eq(x => x.UserId, userId);
             var nameFilter = Builders<CounterDto>.Filter.Eq(x => x.Title, counterName);
@@ -67,7 +67,7 @@ namespace CounterAssistant.DataAccess
             return dto?.ToDomain();
         }
 
-        public async Task<Dictionary<int, Counter[]>> GetCountersForDailyUpdateAsync()
+        public async Task<Dictionary<long, Counter[]>> GetCountersForDailyUpdateAsync()
         {
             var dateFilter = Builders<CounterDto>.Filter.Lt(x => x.LastModifiedAt, new BsonDateTime(DateTime.UtcNow.AddDays(-1).AddMinutes(1)));
             var typeFilter = Builders<CounterDto>.Filter.Eq(x => x.IsManual, false);
@@ -78,7 +78,7 @@ namespace CounterAssistant.DataAccess
             return result.GroupBy(x => x.UserId).ToDictionary(x => x.Key, x => x.Select(dto => dto.ToDomain()).ToArray());
         }
 
-        public async Task<List<Counter>> GetUserCountersAsync(int userId)
+        public async Task<List<Counter>> GetUserCountersAsync(long userId)
         {
             var filter = Builders<CounterDto>.Filter.Eq(x => x.UserId, userId);
             var dtos = await _repository.FindManyAsync(filter);

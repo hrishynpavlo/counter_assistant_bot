@@ -9,11 +9,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Args;
+using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -21,7 +20,7 @@ using static CounterAssistant.Bot.BotCommands;
 
 namespace CounterAssistant.Bot
 {
-    public class BotService : IHostedService, IDisposable
+    public class BotService : IHostedService
     {
         private readonly ITelegramBotClient _botClient;
         private readonly IContextProvider _contextProvider;
@@ -30,9 +29,13 @@ namespace CounterAssistant.Bot
         private readonly ILogger<BotService> _logger;
         private readonly IMetricsRoot _metrics;
 
-        private readonly static ReplyKeyboardMarkup DEFAULT_KEYBOARD = new ReplyKeyboardMarkup
+        private static readonly ReceiverOptions _receiverOptions = new ReceiverOptions
         {
-            Keyboard = new List<List<KeyboardButton>>
+            AllowedUpdates = {}
+        };
+        
+        private static readonly ReplyKeyboardMarkup DEFAULT_KEYBOARD = new ReplyKeyboardMarkup(keyboard: 
+            new List<List<KeyboardButton>>
             {
                 new List<KeyboardButton>
                 {
@@ -43,12 +46,12 @@ namespace CounterAssistant.Bot
                 {
                     new KeyboardButton(DISPLAY_ALL_COUNTERS_COMMAND)
                 }
-            },
+            })
+        {
             ResizeKeyboard = true
         };
-        private readonly static ReplyKeyboardMarkup COUNTER_KEYBOARD = new ReplyKeyboardMarkup
-        {
-            Keyboard = new List<List<KeyboardButton>>
+        private static readonly ReplyKeyboardMarkup COUNTER_KEYBOARD = new ReplyKeyboardMarkup(keyboard: 
+            new List<List<KeyboardButton>>
             {
                 new List<KeyboardButton>
                 {
@@ -64,7 +67,8 @@ namespace CounterAssistant.Bot
                 {
                     new KeyboardButton(BACK_COMMAND)
                 }
-            },
+            })
+        {
             ResizeKeyboard = true
         };
 
@@ -81,35 +85,60 @@ namespace CounterAssistant.Bot
         [ExcludeFromCodeCoverage]
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _botClient.OnMessage += OnMessageHandler;
-            _botClient.OnCallbackQuery += OnCallbackQueryHandler;
-
             var commands = new[]
             {
                 new BotCommand { Command = START_COMMAND, Description = "старт" }
             };
 
-            await _botClient.SetMyCommandsAsync(commands);
+            await _botClient.SetMyCommandsAsync(commands, cancellationToken: cancellationToken);
 
-            _botClient.StartReceiving();
+            _botClient.StartReceiving(
+                HandleMessage, 
+                HandleError, 
+                _receiverOptions, 
+                cancellationToken);
         }
 
-        [ExcludeFromCodeCoverage(Justification = "There is no way to create MessageEventArgs")]
-        public async void OnMessageHandler(object sender, MessageEventArgs e)
+        private async Task HandleMessage(ITelegramBotClient botClient, Update update,
+            CancellationToken cancellationToken)
         {
-            if (e.Message.Text != null)
+            switch (update.Type)
             {
-                var request = BotRequest.FromMessage(e.Message);
+                case UpdateType.Message:
+                    await OnMessageHandler(update.Message);
+                    break;
+                case UpdateType.CallbackQuery:
+                    await OnCallbackQueryHandler(update.CallbackQuery);
+                    break;
+                default:
+                    _logger.LogWarning("Not handled update type = {type} received", update.Type);
+                    break;
+            }
+        }
+
+        private Task HandleError(ITelegramBotClient botClient, Exception exception,
+            CancellationToken cancellationToken)
+        {
+            _logger.LogError(exception, "Update polling error, see details:");
+            return Task.CompletedTask;
+        }
+        
+        [ExcludeFromCodeCoverage(Justification = "There is no way to create MessageEventArgs")]
+        private async Task OnMessageHandler(Message message)
+        {
+            if (message.Text != null)
+            {
+                var request = BotRequest.FromMessage(message);
                 await HandleRequest(request);
             }
         }
 
         [ExcludeFromCodeCoverage(Justification = "There is no way to create CallbackQueryEventArgs")]
-        public async void OnCallbackQueryHandler(object sender, CallbackQueryEventArgs e)
+        private async Task OnCallbackQueryHandler(CallbackQuery callbackQuery)
         {
-            if (e.CallbackQuery.Data != null)
+            if (callbackQuery.Data != null)
             {
-                var request = BotRequest.FromCallback(e.CallbackQuery);
+                var request = BotRequest.FromCallback(callbackQuery);
                 await HandleRequest(request);
             }
         }
@@ -256,13 +285,8 @@ namespace CounterAssistant.Bot
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            Dispose();
+            _logger.LogInformation("Bot service stopped");
             return Task.CompletedTask;
-        }
-
-        public void Dispose()
-        {
-            _botClient?.StopReceiving();
         }
     }
 }

@@ -19,7 +19,7 @@ namespace CounterAssistant.Bot.Extensions
 
             for(var i = 0; i < buttons.Count; i += number)
             {
-                var line = buttons.Skip(i).Take(number).ToArray().Select(kvp => new InlineKeyboardButton { CallbackData = kvp.Key, Pay = false, Text = kvp.Value });
+                var line = buttons.Skip(i).Take(number).ToArray().Select(kvp => new InlineKeyboardButton(kvp.Value) { CallbackData = kvp.Key, Pay = false });
                 lines.Add(line);
             }
 
@@ -29,7 +29,7 @@ namespace CounterAssistant.Bot.Extensions
         //U+ should be replaced by 0x
         public static InlineKeyboardMarkup ToPaymentButton(string action, string text, string url)
         {
-            return new InlineKeyboardMarkup(new InlineKeyboardButton { Url = url , CallbackData = action, Pay = false, Text = $"{char.ConvertFromUtf32(0x27A1)} {text}" });
+            return new InlineKeyboardMarkup(new InlineKeyboardButton($"{char.ConvertFromUtf32(0x27A1)} {text}") { Url = url , CallbackData = action, Pay = false });
         }
     }
 }

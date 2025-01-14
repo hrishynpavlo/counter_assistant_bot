@@ -7,7 +7,7 @@ namespace CounterAssistant.Bot
         public string FirstName { get; }
         public string LastName { get; }
         public string UserName { get; }
-        public int UserId { get; }
+        public long UserId { get; }
         public long ChatId { get; }
         public string Text { get; }
 

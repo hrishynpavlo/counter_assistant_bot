@@ -13,7 +13,7 @@ namespace CounterAssistant.DataAccess.DTO
         public string Title { get; set; }
         public ushort Step { get; set; }
         public int Amount { get; set; }
-        public int UserId { get; set; }
+        public long UserId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastModifiedAt { get; set; }
         public bool IsManual { get; set; }
@@ -21,7 +21,7 @@ namespace CounterAssistant.DataAccess.DTO
 
         public Counter ToDomain() => new Counter(Id, Title, Amount, Step, CreatedAt, LastModifiedAt, IsManual, Enum.TryParse<CounterUnit>(Unit, ignoreCase: true, out var unit) ? unit : CounterUnit.Time);
 
-        public static CounterDto FromDomain(Counter counter, int userId)
+        public static CounterDto FromDomain(Counter counter, long userId)
         {
             return new CounterDto
             {
