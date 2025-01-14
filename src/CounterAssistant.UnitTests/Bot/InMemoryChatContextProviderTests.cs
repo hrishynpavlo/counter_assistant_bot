@@ -109,7 +109,7 @@ namespace CounterAssistant.UnitTests.Bot
             };
 
             var cache = new MemoryCache(new MemoryCacheOptions());
-            _userService.Setup(x => x.GetUserByIdAsync(It.IsAny<int>())).ReturnsAsync(user);
+            _userService.Setup(x => x.GetUserByIdAsync(It.IsAny<long>())).ReturnsAsync(user);
 
             var contextProvider = new InMemoryContextProvider(_userService.Object, _counterStore.Object, cache, _settings, _metrics.Object, _logger.Object);
 
