@@ -69,7 +69,7 @@ namespace CounterAssistant.DataAccess
 
         public async Task<Dictionary<long, Counter[]>> GetCountersForDailyUpdateAsync()
         {
-            var dateFilter = Builders<CounterDto>.Filter.Lt(x => x.LastModifiedAt, new BsonDateTime(DateTime.UtcNow.AddDays(-1).AddMinutes(1)));
+            var dateFilter = Builders<CounterDto>.Filter.Lt(x => x.LastModifiedAt, DateTime.UtcNow.AddDays(-1).AddMinutes(1));
             var typeFilter = Builders<CounterDto>.Filter.Eq(x => x.IsManual, false);
             var filter = Builders<CounterDto>.Filter.And(dateFilter, typeFilter);
 

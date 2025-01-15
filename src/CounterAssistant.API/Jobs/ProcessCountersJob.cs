@@ -64,7 +64,7 @@ namespace CounterAssistant.API.Jobs
 
                     try
                     {
-                        await _botClient.SendTextMessageAsync(user.BotInfo.ChatId, message, parseMode: ParseMode.Html, disableNotification: true);
+                        await _botClient.SendMessage(user.BotInfo.ChatId, message, parseMode: ParseMode.Html, disableNotification: true);
                     }
                     catch(ApiRequestException arex) when (arex.Message.StartsWith("Forbidden: bot was blocked by the user"))
                     {

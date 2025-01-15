@@ -19,14 +19,6 @@ namespace CounterAssistant.API
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureHostConfiguration(config =>
-                {
-                    config.SetBasePath(Directory.GetCurrentDirectory())
-                        .AddJsonFile("appsettings.json", optional: false)
-                        .AddJsonFile("secrets.json", optional: true)
-                        .AddEnvironmentVariables(prefix: "CA_")
-                        .Build();
-                })
                 .ConfigureLogging(config =>
                 {
                     config.ClearProviders();

@@ -1,7 +1,5 @@
 using App.Metrics;
 using App.Metrics.Formatters.Prometheus;
-using CounterAssistant.API.Controllers;
-using CounterAssistant.API.Extensions;
 using CounterAssistant.API.HealthChecks;
 using CounterAssistant.API.Jobs;
 using CounterAssistant.Bot;
@@ -16,11 +14,11 @@ using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
-using Newtonsoft.Json.Linq;
 using Quartz;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using Telegram.Bot;
 
 namespace CounterAssistant.API
@@ -28,16 +26,17 @@ namespace CounterAssistant.API
     [ExcludeFromCodeCoverage]
     public class Startup
     {
-        public Startup(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
-
-        public IConfiguration Configuration { get; }
-
         public void ConfigureServices(IServiceCollection services)
         {
-            var appSettings = AppSettings.FromConfig(Configuration);
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddJsonFile("secrets.json", optional: true)
+                .AddEnvironmentVariables(prefix: "CA_")
+                .Build();
+
+            services.AddSingleton<IConfiguration>(configuration);
+            
+            var appSettings = AppSettings.FromConfig(configuration);
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -47,8 +46,7 @@ namespace CounterAssistant.API
 
             services.AddSingleton<IMongoDatabase>(_ => 
             {
-                var pack = new ConventionPack();
-                pack.Add(new CamelCaseElementNameConvention());
+                var pack = new ConventionPack { new CamelCaseElementNameConvention() };
 
                 ConventionRegistry.Register(
                    "CamelCaseConvention",
@@ -57,22 +55,21 @@ namespace CounterAssistant.API
 
                 //important: map csuuid as uuid 
                 //obsolete: Configure serializers doesn't work
-                MongoDefaults.GuidRepresentation = GuidRepresentation.Standard;
-
-                var client = new MongoClient(appSettings.MongoHost);
-                return client.GetDatabase(appSettings.MongoDatabase);
+                BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
+                var client = new MongoClient(appSettings.Mongo.Host);
+                return client.GetDatabase(appSettings.Mongo.Database);
             });
 
             services.AddSingleton<IMongoCollection<UserDto>>(provider => 
             {
                 var mongo = provider.GetService<IMongoDatabase>();
-                return mongo.GetCollection<UserDto>(appSettings.MongoUserCollection);
+                return mongo.GetCollection<UserDto>(appSettings.Mongo.UserCollection);
             });
 
             services.AddSingleton<IMongoCollection<CounterDto>>(provider =>
             {
                 var mongo = provider.GetService<IMongoDatabase>();
-                var collection = mongo.GetCollection<CounterDto>(appSettings.MongoCounterCollection);
+                var collection = mongo.GetCollection<CounterDto>(appSettings.Mongo.CounterCollection);
 
                 var builder = Builders<CounterDto>.IndexKeys;
                 var lastModifiedIndex = new CreateIndexModel<CounterDto>(builder.Ascending(x => x.LastModifiedAt));
@@ -85,33 +82,31 @@ namespace CounterAssistant.API
 
             services.AddSingleton<ContextProviderSettings>(_ => new ContextProviderSettings 
             { 
-                ExpirationTime = appSettings.CacheExpirationTime,
-                ProlongationTime = appSettings.CacheProlongationTime 
+                ExpirationTime = appSettings.InMemoryCache.CacheExpirationTime,
+                ProlongationTime = appSettings.InMemoryCache.CacheProlongationTime 
             });
             services.AddSingleton<IContextProvider, InMemoryContextProvider>();
 
-            services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(appSettings.TelegramBotAccessToken));
+            services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(appSettings.Telegram.Token));
 
             services.AddHostedService<BotService>();
 
             services.AddQuartz(options => 
             {
-                options.UseMicrosoftDependencyInjectionJobFactory();
-
                 const string jobName = "daily_counter_processing";
                 var jobKey = new JobKey(jobName);
 
                 options.AddJob<ProcessCountersJob>(jobKey);
 
-                options.AddTrigger(options =>
+                options.AddTrigger(o =>
                 {
-                    options.ForJob(jobKey)
+                    o.ForJob(jobKey)
                         .StartNow();
                 });
 
-                options.AddTrigger(options => 
+                options.AddTrigger(o => 
                 {
-                    options.ForJob(jobKey)
+                    o.ForJob(jobKey)
                         .WithCronSchedule("0 5 0 ? * *");
                 });
             });
@@ -125,10 +120,11 @@ namespace CounterAssistant.API
                 .Configuration
                 .Configure(options => 
                 {
-                    options.GlobalTags["env"] = appSettings.Environment;
-                    options.GlobalTags["server"] = appSettings.Server;
+                    options.GlobalTags["env"] = AppSettings.Environment;
+                    options.GlobalTags["server"] = AppSettings.Server;
                     options.GlobalTags["app"] = AppSettings.AppName;
-                    options.GlobalTags["commit_hash"] = AppSettings.CommitHahs;
+                    options.GlobalTags["commit_hash"] = AppSettings.CommitHash;
+                    options.GlobalTags["machine_name"] = AppSettings.MachineName;
                 })
                 .OutputMetrics
                 .AsPrometheusPlainText()
@@ -146,7 +142,7 @@ namespace CounterAssistant.API
             services.AddMemoryCache();
 
             services.AddHealthChecks()
-                .AddMongoDb(appSettings.MongoHost, tags: new[] { "database", "mongodb" })
+                .AddMongoDb(appSettings.Mongo.Host, tags: new[] { "database", "mongodb" })
                 .AddTelegramBot();
 
             services.AddSingleton(typeof(IAsyncRepository<>), typeof(AsyncRepository<>));
@@ -168,11 +164,9 @@ namespace CounterAssistant.API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-
+                endpoints.MapGet("/", async context => context.Response.Redirect("/swagger"));
                 endpoints.MapHealthChecks("/health/liveness", HealthCheck.DefaultOptions);
                 endpoints.MapHealthChecks("/health/readiness", HealthCheck.DefaultOptions);
-
-                endpoints.MapCodeCoverage();
             });
         }
     }

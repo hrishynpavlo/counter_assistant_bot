@@ -50,7 +50,15 @@ namespace CounterAssistant.DataAccess
 
         public virtual async Task<IEnumerable<T>> FindManyAsync(FilterDefinition<T> filter)
         {
-            return await _db.Find(filter ?? DefaultFilter).ToListAsync();
+            try
+            {
+                return await _db.Find(filter ?? DefaultFilter).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FindManyAsync failed, see details");
+                throw;
+            }
         }
 
         public virtual async Task<T> FindOneAsync(FilterDefinition<T> filter)

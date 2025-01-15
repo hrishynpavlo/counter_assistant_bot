@@ -6,6 +6,8 @@ using MongoDB.Driver;
 using Moq;
 using NUnit.Framework;
 using System;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 
 namespace CounterAssistant.UnitTests.Mongo
 {
@@ -20,8 +22,9 @@ namespace CounterAssistant.UnitTests.Mongo
         protected void BeforeAllTests()
         {
             _runner = MongoDbRunner.Start();
-            MongoDefaults.GuidRepresentation = GuidRepresentation.Standard;
+            BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
             _db = new MongoClient(_runner.ConnectionString).GetDatabase("counter-assistant-tests");
+
             var collection = _db.GetCollection<T>(Guid.NewGuid().ToString());
             var logger = new Mock<ILogger<AsyncRepository<T>>>();
 

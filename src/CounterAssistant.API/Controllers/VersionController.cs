@@ -7,6 +7,7 @@ namespace CounterAssistant.API.Controllers
     [Route("api")]
     public class VersionController : ControllerBase
     {
+        private static readonly string Report = System.IO.File.Exists("Summary.txt") ? System.IO.File.ReadAllText("Summary.txt") : "No data";
         private readonly ILogger<VersionController> _logger;
 
         public VersionController(ILogger<VersionController> logger)
@@ -15,14 +16,24 @@ namespace CounterAssistant.API.Controllers
         }
 
         [HttpGet("version")]
-        public IActionResult GetVersion()
+        public ActionResult GetVersion()
         {
             _logger.LogInformation("Called method {method}", nameof(GetVersion));
             return Ok(new 
             { 
                 version = AppSettings.AppVersion,
-                commitHash = AppSettings.CommitHahs
+                commitHash = AppSettings.CommitHash,
+                server = AppSettings.Server,
+                env = AppSettings.Environment,
+                started_at = AppSettings.StartedAt,
+                machine_name = AppSettings.MachineName
             });
+        }
+
+        [HttpGet("code-coverage")]
+        public ActionResult GetCodeCoverage()
+        {
+            return Ok(Report);
         }
     }
 }
