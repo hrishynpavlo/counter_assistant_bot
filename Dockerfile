@@ -11,9 +11,10 @@ RUN dotnet publish -c Release -p:TargetArch=$TARGETARCH
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
+ARG TARGETARCH
 ARG GITHUB_SHA
 ENV COMMIT_HASH=$GITHUB_SHA
 ARG APP_NAME="CounterAssistant.API"
-COPY --from=build-env /build/$APP_NAME/bin/Release/net7.0/publish /app
+COPY --from=build-env /build/$APP_NAME/bin/Release/net7.0/$TARGETARCH/publish /app
 COPY --from=build-env /build/codecoverage/Summary.txt /app
 ENTRYPOINT ["dotnet", "CounterAssistant.API.dll"]
