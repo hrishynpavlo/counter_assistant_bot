@@ -17,6 +17,7 @@ using MongoDB.Driver;
 using Quartz;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Telegram.Bot;
@@ -164,7 +165,11 @@ namespace CounterAssistant.API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapGet("/", async context => context.Response.Redirect("/swagger"));
+                endpoints.MapGet("/", context =>
+                {
+                    context.Response.Redirect("/swagger");
+                    return Task.CompletedTask;
+                });
                 endpoints.MapHealthChecks("/health/liveness", HealthCheck.DefaultOptions);
                 endpoints.MapHealthChecks("/health/readiness", HealthCheck.DefaultOptions);
             });
