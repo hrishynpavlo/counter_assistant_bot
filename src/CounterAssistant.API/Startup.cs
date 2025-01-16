@@ -32,7 +32,7 @@ namespace CounterAssistant.API
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: false)
                 .AddJsonFile("secrets.json", optional: true)
-                .AddEnvironmentVariables(prefix: "CA_")
+                .AddEnvironmentVariables()
                 .Build();
 
             services.AddSingleton<IConfiguration>(configuration);
