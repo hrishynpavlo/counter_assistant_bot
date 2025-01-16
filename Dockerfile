@@ -1,12 +1,12 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0 as build-env
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:7.0 as build-env
 WORKDIR /build
 COPY ./src/ .
-RUN dotnet restore
-RUN dotnet tool restore
+RUN dotnet restore -a $TARGETARCH
+RUN dotnet tool restore  -a $TARGETARCH
 RUN dotnet build
 RUN dotnet test --no-build --collect "XPlat Code Coverage" --settings ./CounterAssistant.UnitTests/coverlet.runsettings --filter TestCategory!=MongoIntegration
 RUN dotnet reportgenerator -reports:**/TestResults/**/coverage.opencover.xml -targetdir:codecoverage  -reporttypes:textSummary
-RUN dotnet publish -c Release
+RUN dotnet publish -c Release -a $TARGETARCH
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app

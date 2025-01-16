@@ -90,7 +90,7 @@ namespace CounterAssistant.Bot
                 new BotCommand { Command = START_COMMAND, Description = "старт" }
             };
 
-            await _botClient.SetMyCommandsAsync(commands, cancellationToken: cancellationToken);
+            await _botClient.SetMyCommands(commands, cancellationToken: cancellationToken);
 
             _botClient.StartReceiving(
                 HandleMessage, 
@@ -159,7 +159,7 @@ namespace CounterAssistant.Bot
                         context.SetCurrentCommand(START_COMMAND);
                         _logger.LogInformation("User {user} has started bot", context.UserId);
                         _metrics.Measure.Counter.Increment(BotMetrics.StartedChats);
-                        await _botClient.SendTextMessageAsync(context.ChatId, $"Привет {context.Name}, меня зовут Джарвис, я счётчик-бот и хочу облегчить тебе жизнь!", replyMarkup: DEFAULT_KEYBOARD);
+                        await _botClient.SendMessage(context.ChatId, $"Привет {context.Name}, меня зовут Джарвис, я счётчик-бот и хочу облегчить тебе жизнь!", replyMarkup: DEFAULT_KEYBOARD);
                         break;
                     }
                     case CREATE_COUNTER_COMMAND:
@@ -172,7 +172,7 @@ namespace CounterAssistant.Bot
 
                         if (!result.IsCompleted)
                         {
-                            await _botClient.SendTextMessageAsync(context.ChatId, result.Message, replyMarkup: result.Buttons);
+                            await _botClient.SendMessage(context.ChatId, result.Message, replyMarkup: result.Buttons);
                         }
                         else
                         {
@@ -184,21 +184,21 @@ namespace CounterAssistant.Bot
 
                             var counters = await _counterService.GetUserCountersAsync(context.UserId);
 
-                            await _botClient.SendTextMessageAsync(context.ChatId, result.Message, parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
+                            await _botClient.SendMessage(context.ChatId, result.Message, parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
                         }
                         break;
                     }
                     case SETTINGS_COMMAND:
                     {
                         // todo
-                        await _botClient.SendTextMessageAsync(context.ChatId, text: "Эта фича еще в разработке", replyMarkup: DEFAULT_KEYBOARD);
+                        await _botClient.SendMessage(context.ChatId, text: "Эта фича еще в разработке", replyMarkup: DEFAULT_KEYBOARD);
                         break;
                     }
                     case DISPLAY_ALL_COUNTERS_COMMAND:
                     {
                         var counters = await _counterService.GetUserCountersAsync(context.UserId);
                         context.SetCurrentCommand(SELECT_COUNTER_COMMAND);
-                        await _botClient.SendTextMessageAsync(context.ChatId, text: _messageFormatter.GetDetailedCounters(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
+                        await _botClient.SendMessage(context.ChatId, text: _messageFormatter.GetDetailedCounters(counters), parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
                         break;
                     }
                     case BACK_COMMAND when context.Command == MANAGE_COUNTER_COMMAND:
@@ -209,7 +209,7 @@ namespace CounterAssistant.Bot
                         context.ClearSelectedCounter();
 
                         var counters = await _counterService.GetUserCountersAsync(context.UserId);
-                        await _botClient.SendTextMessageAsync(context.ChatId, text: "Выберите счётчик: " , parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
+                        await _botClient.SendMessage(context.ChatId, text: "Выберите счётчик: " , parseMode: ParseMode.Html, replyMarkup: GetCounterKeyboard(counters));
 
                         break;
                     }
@@ -217,7 +217,7 @@ namespace CounterAssistant.Bot
                     {
                         // for SELECT_COUNTER_COMMAND and default command
                         context.SetCurrentCommand(START_COMMAND);
-                        await _botClient.SendTextMessageAsync(context.ChatId, "Выберите действие:", replyMarkup: DEFAULT_KEYBOARD);
+                        await _botClient.SendMessage(context.ChatId, "Выберите действие:", replyMarkup: DEFAULT_KEYBOARD);
                         break;
                     }
                     case not null when context.Command == SELECT_COUNTER_COMMAND:
@@ -228,25 +228,25 @@ namespace CounterAssistant.Bot
 
                         context.SetCurrentCommand(MANAGE_COUNTER_COMMAND);
 
-                        await _botClient.SendTextMessageAsync(context.ChatId, text: _messageFormatter.GetDetailedCounter(context.SelectedCounter), parseMode: ParseMode.Html, replyMarkup: COUNTER_KEYBOARD);
+                        await _botClient.SendMessage(context.ChatId, text: _messageFormatter.GetDetailedCounter(context.SelectedCounter), parseMode: ParseMode.Html, replyMarkup: COUNTER_KEYBOARD);
                         break;
                     }
                     case DECREMENT_COMMAND:
                     {
                         context.SelectedCounter.Decrement();
-                        await _botClient.SendTextMessageAsync(context.ChatId, $"Счётчик успешно уменьшен: <b>{context.SelectedCounter.Title}: {context.SelectedCounter.Amount}</b>", parseMode: ParseMode.Html);
+                        await _botClient.SendMessage(context.ChatId, $"Счётчик успешно уменьшен: <b>{context.SelectedCounter.Title}: {context.SelectedCounter.Amount}</b>", parseMode: ParseMode.Html);
                         break;
                     }
                     case INCREMENT_COMMAND:
                     {
                         context.SelectedCounter.Increment();
-                        await _botClient.SendTextMessageAsync(context.ChatId, $"Счётчик успешно увеличен: <b>{context.SelectedCounter.Title}: {context.SelectedCounter.Amount}</b>.", parseMode: ParseMode.Html);
+                        await _botClient.SendMessage(context.ChatId, $"Счётчик успешно увеличен: <b>{context.SelectedCounter.Title}: {context.SelectedCounter.Amount}</b>.", parseMode: ParseMode.Html);
                         break;
                     }
                     case RESET_COUNTER_COMMAND:
                     {
                         context.SelectedCounter.Reset();
-                        await _botClient.SendTextMessageAsync(context.ChatId, $"Значение счётчика <b>{context.SelectedCounter.Title}</b> успешно сброшено до 0.", parseMode: ParseMode.Html);
+                        await _botClient.SendMessage(context.ChatId, $"Значение счётчика <b>{context.SelectedCounter.Title}</b> успешно сброшено до 0.", parseMode: ParseMode.Html);
                         break;
                     }
                     case REMOVE_COUNTER_COMMAND:
@@ -256,13 +256,13 @@ namespace CounterAssistant.Bot
                         context.ClearSelectedCounter();
                         context.SetCurrentCommand(START_COMMAND);
                         _metrics.Measure.Counter.Increment(BotMetrics.RemovedCounters);
-                        await _botClient.SendTextMessageAsync(context.ChatId, $"Счётчик <b>{counterName}</b> успешно удален. Выберите другой счётчик:", parseMode: ParseMode.Html, replyMarkup: DEFAULT_KEYBOARD);
+                        await _botClient.SendMessage(context.ChatId, $"Счётчик <b>{counterName}</b> успешно удален. Выберите другой счётчик:", parseMode: ParseMode.Html, replyMarkup: DEFAULT_KEYBOARD);
                         break;
                     }
                     default:
                     {
                         _logger.LogInformation("user {id} message: {msg} is not recognized as a bot command", context.UserId, message);
-                        await _botClient.SendTextMessageAsync(context.ChatId, "Я конечно искусственный интеллект, но этого не понял :)");
+                        await _botClient.SendMessage(context.ChatId, "Я конечно искусственный интеллект, но этого не понял :)");
                         break;
                     }
                 }
@@ -272,7 +272,7 @@ namespace CounterAssistant.Bot
                 _logger.LogError(ex, "Unhandled bot's command");
                 context.SetCurrentCommand(START_COMMAND);
                 _metrics.Measure.Counter.Increment(BotMetrics.Errors);
-                await _botClient.SendTextMessageAsync(context.ChatId, "Что-то пошло не так, я уже занимаюсь проблемой!", replyMarkup: DEFAULT_KEYBOARD);
+                await _botClient.SendMessage(context.ChatId, "Что-то пошло не так, я уже занимаюсь проблемой!", replyMarkup: DEFAULT_KEYBOARD);
             }
         }
 
