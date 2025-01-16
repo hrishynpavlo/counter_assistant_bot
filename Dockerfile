@@ -4,10 +4,10 @@ WORKDIR /build
 COPY ./src/ .
 RUN dotnet restore
 RUN dotnet tool restore 
-RUN dotnet build -r $TARGETARCH 
+RUN dotnet build -p:TargetArch=$TARGETARCH 
 RUN dotnet test --no-build --collect "XPlat Code Coverage" --settings ./CounterAssistant.UnitTests/coverlet.runsettings --filter TestCategory!=MongoIntegration
 RUN dotnet reportgenerator -reports:**/TestResults/**/coverage.opencover.xml -targetdir:codecoverage  -reporttypes:textSummary
-RUN dotnet publish -c Release -r $TARGETARCH  
+RUN dotnet publish -c Release -p:TargetArch=$TARGETARCH
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
