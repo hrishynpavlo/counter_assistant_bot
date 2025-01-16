@@ -1,39 +1,29 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Filters;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
+using Microsoft.AspNetCore.Builder;
 
 namespace CounterAssistant.API
 {
     [ExcludeFromCodeCoverage]
-    public class Program
+    public static class Program
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var builder = WebApplication.CreateBuilder(args);
+            builder.Host.UseSerilog((_, _, config) =>
+            {
+                config
+                    .Filter.ByExcluding(Matching.FromSource("Microsoft"))
+                    .Filter.ByExcluding(Matching.FromSource("Quartz"))
+                    .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+            });
+            var startup = new Startup();
+            startup.ConfigureServices(builder.Services);
+            var app = builder.Build();
+            startup.Configure(app, app.Environment);
+            
+            app.Run();
         }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureLogging(config =>
-                {
-                    config.ClearProviders();
-                    
-                })
-                .UseSerilog((_, __, config) => 
-                {
-                    config
-                        .Filter.ByExcluding(Matching.FromSource("Microsoft"))
-                        .Filter.ByExcluding(Matching.FromSource("Quartz"))
-                        .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
-                })
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
     }
 }
