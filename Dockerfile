@@ -14,6 +14,6 @@ WORKDIR /app
 ARG TARGETARCH
 ARG GITHUB_SHA
 ENV COMMIT_HASH=$GITHUB_SHA
-COPY --from=build-env /build/publish-app /app
+COPY --from=build-env /build/published-app /app
 COPY --from=build-env /build/codecoverage/Summary.txt /app
 ENTRYPOINT ["dotnet", "CounterAssistant.API.dll"]
