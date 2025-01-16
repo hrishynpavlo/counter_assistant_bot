@@ -1,4 +1,5 @@
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:7.0 as build-env
+ARG TARGETARCH
 WORKDIR /build
 COPY ./src/ .
 RUN dotnet restore -a $TARGETARCH
