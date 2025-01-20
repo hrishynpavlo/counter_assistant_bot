@@ -17,10 +17,10 @@ namespace CounterAssistant.UnitTests.Domains
             var counter = builder.WithName(title).WithStep(step).WithType(isManual).Build();
 
             //ASSERT
-            Assert.IsNotNull(counter);
-            Assert.AreEqual(title, counter.Title);
-            Assert.AreEqual(step, counter.Step);
-            Assert.AreEqual(isManual, counter.IsManual);
+            Assert.That(counter, Is.Not.Null);
+            Assert.That(title, Is.EqualTo(counter.Title));
+            Assert.That(step, Is.EqualTo(counter.Step));
+            Assert.That(isManual, Is.EqualTo(counter.IsManual));
         }
 
         [Test]
@@ -34,8 +34,8 @@ namespace CounterAssistant.UnitTests.Domains
             var counter = builder.WithName(title).Build();
 
             //ASSERT
-            Assert.IsNotNull(counter);
-            Assert.AreEqual(CounterBuilder.DefultStep, counter.Step);
+            Assert.That(counter, Is.Not.Null);
+            Assert.That(CounterBuilder.DefultStep, Is.EqualTo(counter.Step));
         }
     }
 }

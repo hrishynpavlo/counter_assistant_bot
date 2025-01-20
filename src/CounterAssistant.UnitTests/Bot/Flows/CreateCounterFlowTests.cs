@@ -26,8 +26,8 @@ namespace CounterAssistant.UnitTests.Bot.Flows
             var flow = CreateCounterFlow.RestoreFromContext(user);
 
             //ASSERT
-            Assert.IsNotNull(flow);
-            Assert.AreEqual(CreateFlowSteps.None, flow.State);
+            Assert.That(flow, Is.Not.Null);
+            Assert.That(CreateFlowSteps.None, Is.EqualTo(flow.State));
         }
 
         [TestCaseSource(nameof(CounterBuilderTestCases))]
@@ -37,7 +37,7 @@ namespace CounterAssistant.UnitTests.Bot.Flows
             var flow = CreateCounterFlow.RestoreFromContext(user);
 
             //ASSERT
-            Assert.AreEqual(expectedArgs, flow.Args.Count);
+            Assert.That(expectedArgs, Is.EqualTo(flow.Args.Count));
         }
 
         [Test]
@@ -50,44 +50,44 @@ namespace CounterAssistant.UnitTests.Bot.Flows
 
             //step 1: none
             var result = flow.Perform(string.Empty);
-            Assert.AreEqual(CreateFlowSteps.SetCounterName, flow.State);
-            Assert.IsFalse(result.IsCompleted);
-            Assert.IsFalse(string.IsNullOrWhiteSpace(result.Message));
-            Assert.AreEqual(0, flow.Args.Count);
+            Assert.That(CreateFlowSteps.SetCounterName, Is.EqualTo(flow.State));
+            Assert.That(result.IsCompleted, Is.False);
+            Assert.That(string.IsNullOrWhiteSpace(result.Message), Is.False);
+            Assert.That(0, Is.EqualTo(flow.Args.Count));
 
             //step 2: set counter name
             var counterName = "test-counter";
             result = flow.Perform(counterName);
-            Assert.AreEqual(CreateFlowSteps.SetCounterStep, flow.State);
-            Assert.IsFalse(result.IsCompleted);
-            Assert.IsFalse(string.IsNullOrWhiteSpace(result.Message));
-            Assert.AreEqual(1, flow.Args.Count);
+            Assert.That(CreateFlowSteps.SetCounterStep, Is.EqualTo(flow.State));
+            Assert.That(result.IsCompleted, Is.False);
+            Assert.That(string.IsNullOrWhiteSpace(result.Message), Is.False);
+            Assert.That(1, Is.EqualTo(flow.Args.Count));
 
             //step 3: set counter step
             var counterStep = 1;
             result = flow.Perform(counterStep.ToString());
-            Assert.AreEqual(CreateFlowSteps.SetCounterType, flow.State);
-            Assert.IsFalse(result.IsCompleted);
-            Assert.AreEqual(2, flow.Args.Count);
-            Assert.IsNotNull(result.Buttons);
+            Assert.That(CreateFlowSteps.SetCounterType, Is.EqualTo(flow.State));
+            Assert.That(result.IsCompleted, Is.False);
+            Assert.That(2, Is.EqualTo(flow.Args.Count));
+            Assert.That(result.Buttons, Is.Not.Null);
 
             //step 4: set counter type
             var counterType = CounterType.Automatic;
             result = flow.Perform(counterType.ToString());
-            Assert.AreEqual(CreateFlowSteps.SetCounterUnit, flow.State);
-            Assert.IsFalse(result.IsCompleted);
+            Assert.That(CreateFlowSteps.SetCounterUnit, Is.EqualTo(flow.State));
+            Assert.That(result.IsCompleted, Is.False);
 
             //step 5: set counter unit
             var counterUnit = CounterUnit.Day;
             result = flow.Perform(counterUnit.ToString());
-            Assert.AreEqual(CreateFlowSteps.Completed, flow.State);
-            Assert.IsTrue(result.IsCompleted);
-            Assert.IsFalse(string.IsNullOrWhiteSpace(result.Message));
-            Assert.IsNotNull(result.Counter);
+            Assert.That(CreateFlowSteps.Completed, Is.EqualTo(flow.State));
+            Assert.That(result.IsCompleted, Is.True);
+            Assert.That(string.IsNullOrWhiteSpace(result.Message), Is.False);
+            Assert.That(result.Counter, Is.Not.Null);
 
-            Assert.AreEqual(counterName, result.Counter.Title);
-            Assert.AreEqual(counterStep, result.Counter.Step);
-            Assert.AreEqual(counterUnit, result.Counter.Unit);
+            Assert.That(counterName, Is.EqualTo(result.Counter.Title));
+            Assert.That(counterStep, Is.EqualTo(result.Counter.Step));
+            Assert.That(counterUnit, Is.EqualTo(result.Counter.Unit));
         }
 
         private static IEnumerable<TestCaseData> NotValidUsersTestCases()

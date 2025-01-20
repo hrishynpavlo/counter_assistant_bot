@@ -8,7 +8,6 @@ using CounterAssistant.Domain.Models;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -74,7 +73,7 @@ namespace CounterAssistant.UnitTests.Bot
             await _bot.HandleRequest(CreateRequest(BotCommands.START_COMMAND));
 
             //ASSERT
-            Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
+            Assert.That(BotCommands.START_COMMAND, Is.EqualTo(context.Command));
         }
 
         [Test]
@@ -92,33 +91,33 @@ namespace CounterAssistant.UnitTests.Bot
 
             //step 1: create counter command
             await _bot.HandleRequest(CreateRequest(BotCommands.CREATE_COUNTER_COMMAND));
-            Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
-            Assert.IsNotNull(context.CreateCounterFlow);
-            Assert.AreEqual(CreateFlowSteps.SetCounterName, context.CreateCounterFlow.State);
+            Assert.That(BotCommands.CREATE_COUNTER_COMMAND, Is.EqualTo(context.Command));
+            Assert.That(context.CreateCounterFlow, Is.Not.Null);
+            Assert.That(CreateFlowSteps.SetCounterName, Is.EqualTo(context.CreateCounterFlow.State));
 
             //step 2: set counter name
             var counterName = "test-counter";
             await _bot.HandleRequest(CreateRequest(counterName));
-            Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
-            Assert.AreEqual(CreateFlowSteps.SetCounterStep, context.CreateCounterFlow.State);
+            Assert.That(BotCommands.CREATE_COUNTER_COMMAND, Is.EqualTo(context.Command));
+            Assert.That(CreateFlowSteps.SetCounterStep, Is.EqualTo(context.CreateCounterFlow.State));
 
             //step 3: set counter step
             var counterStep = 1;
             await _bot.HandleRequest(CreateRequest(counterStep.ToString()));
-            Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
-            Assert.AreEqual(CreateFlowSteps.SetCounterType, context.CreateCounterFlow.State);
+            Assert.That(BotCommands.CREATE_COUNTER_COMMAND, Is.EqualTo(context.Command));
+            Assert.That(CreateFlowSteps.SetCounterType, Is.EqualTo(context.CreateCounterFlow.State));
 
             //step 4: set counter type
             var type = CounterType.Automatic;
             await _bot.HandleRequest(CreateRequest(type.ToString()));
-            Assert.AreEqual(BotCommands.CREATE_COUNTER_COMMAND, context.Command);
-            Assert.AreEqual(CreateFlowSteps.SetCounterUnit, context.CreateCounterFlow.State);
+            Assert.That(BotCommands.CREATE_COUNTER_COMMAND, Is.EqualTo(context.Command));
+            Assert.That(CreateFlowSteps.SetCounterUnit, Is.EqualTo(context.CreateCounterFlow.State));
 
             //step 5: set counter unit
             var unit = CounterUnit.Day;
             await _bot.HandleRequest(CreateRequest(unit.ToString()));
-            Assert.AreEqual(BotCommands.SELECT_COUNTER_COMMAND, context.Command);
-            Assert.IsNull(context.CreateCounterFlow);
+            Assert.That(BotCommands.SELECT_COUNTER_COMMAND, Is.EqualTo(context.Command));
+            Assert.That(context.CreateCounterFlow, Is.Null);
         }
 
         [Test]
@@ -136,7 +135,7 @@ namespace CounterAssistant.UnitTests.Bot
             await _bot.HandleRequest(CreateRequest(BotCommands.DISPLAY_ALL_COUNTERS_COMMAND));
 
             //ASSERT
-            Assert.AreEqual(BotCommands.SELECT_COUNTER_COMMAND, context.Command);
+            Assert.That(BotCommands.SELECT_COUNTER_COMMAND, Is.EqualTo(context.Command));
         }
 
         [Test]
@@ -155,7 +154,7 @@ namespace CounterAssistant.UnitTests.Bot
             await _bot.HandleRequest(CreateRequest(BotCommands.BACK_COMMAND));
 
             //ASSERT
-            Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
+            Assert.That(BotCommands.START_COMMAND, Is.EqualTo(context.Command));
         }
 
         [Test]
@@ -174,7 +173,7 @@ namespace CounterAssistant.UnitTests.Bot
             await _bot.HandleRequest(CreateRequest(BotCommands.BACK_COMMAND));
 
             //ASSERT
-            Assert.AreEqual(BotCommands.SELECT_COUNTER_COMMAND, context.Command);
+            Assert.That(BotCommands.SELECT_COUNTER_COMMAND, Is.EqualTo(context.Command));
         }
 
         [Test]
@@ -193,7 +192,7 @@ namespace CounterAssistant.UnitTests.Bot
             await _bot.HandleRequest(CreateRequest(BotCommands.BACK_COMMAND));
 
             //ASSERT
-            Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
+            Assert.That(BotCommands.START_COMMAND, Is.EqualTo(context.Command));
         }
 
         [Test]
@@ -212,7 +211,7 @@ namespace CounterAssistant.UnitTests.Bot
             await _bot.HandleRequest(CreateRequest("counter#1 - 0"));
 
             //ASSERT
-            Assert.AreEqual(BotCommands.MANAGE_COUNTER_COMMAND, context.Command);
+            Assert.That(BotCommands.MANAGE_COUNTER_COMMAND, Is.EqualTo(context.Command));
         }
 
         [TestCase(BotCommands.INCREMENT_COMMAND)]
@@ -237,7 +236,7 @@ namespace CounterAssistant.UnitTests.Bot
 
             //ASSERT
             var expected = command == BotCommands.INCREMENT_COMMAND ? (amount + step) : (amount - step);
-            Assert.AreEqual(expected, context.SelectedCounter.Amount);
+            Assert.That(expected, Is.EqualTo(context.SelectedCounter.Amount));
         }
 
         [Test]
@@ -258,8 +257,8 @@ namespace CounterAssistant.UnitTests.Bot
             await _bot.HandleRequest(CreateRequest(BotCommands.RESET_COUNTER_COMMAND));
 
             //ASSERT
-            Assert.AreEqual(0, context.SelectedCounter.Amount);
-            Assert.Greater(context.SelectedCounter.LastModifiedAt, lastModifiedBeforeUpdate);
+            Assert.That(0, Is.EqualTo(context.SelectedCounter.Amount));
+            Assert.That(context.SelectedCounter.LastModifiedAt, Is.GreaterThan(lastModifiedBeforeUpdate));
         }
 
         [Test]
@@ -279,8 +278,8 @@ namespace CounterAssistant.UnitTests.Bot
             await _bot.HandleRequest(CreateRequest(BotCommands.REMOVE_COUNTER_COMMAND));
 
             //ASSERT
-            Assert.IsNull(context.SelectedCounter);
-            Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
+            Assert.That(context.SelectedCounter, Is.Null);
+            Assert.That(BotCommands.START_COMMAND, Is.EqualTo(context.Command));
         }
 
         [Test]
@@ -316,7 +315,7 @@ namespace CounterAssistant.UnitTests.Bot
 
             //ASSERT
             Assert.DoesNotThrowAsync(act);
-            Assert.IsTrue(wasErrors);
+            Assert.That(wasErrors, Is.True);
         }
 
         private static BotRequest CreateRequest(string text, int id = 1)

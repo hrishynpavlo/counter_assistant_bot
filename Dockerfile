@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:7.0 as build-env
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 as build-env
 ARG TARGETARCH
 WORKDIR /build
 COPY ./src/ .
@@ -9,7 +9,7 @@ RUN dotnet test --no-build --collect "XPlat Code Coverage" --settings ./CounterA
 RUN dotnet reportgenerator -reports:**/TestResults/**/coverage.opencover.xml -targetdir:codecoverage  -reporttypes:textSummary
 RUN dotnet publish CounterAssistant.API/CounterAssistant.API.csproj -c Release -p:TargetArch=$TARGETARCH -o published-app
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 ARG TARGETARCH
 ARG GITHUB_SHA

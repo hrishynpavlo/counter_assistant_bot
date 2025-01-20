@@ -17,31 +17,31 @@ namespace CounterAssistant.UnitTests.Domains
             var lastModifiedAtStart = counter.LastModifiedAt;
 
             //ACT & ASSERT
-            Assert.AreEqual(lastModifiedAtStart, counter.CreatedAt);
-            Assert.AreEqual(amount, counter.Amount);
-            Assert.AreEqual(step, counter.Step);
+            Assert.That(lastModifiedAtStart, Is.EqualTo(counter.CreatedAt));
+            Assert.That(amount, Is.EqualTo(counter.Amount));
+            Assert.That(step, Is.EqualTo(counter.Step));
 
             counter.Increment();
             counter.Increment();
-            Assert.Greater(counter.LastModifiedAt, lastModifiedAtStart);
-            Assert.AreEqual(counter.Step * 2 + amount, counter.Amount);
+            Assert.That(counter.LastModifiedAt, Is.EqualTo(lastModifiedAtStart));
+            Assert.That(counter.Step * 2 + amount, Is.EqualTo(counter.Amount));
 
             lastModifiedAtStart = counter.LastModifiedAt;
             var amountBeforeDecrement = counter.Amount;
             counter.Decrement();
-            Assert.Greater(counter.LastModifiedAt, lastModifiedAtStart);
-            Assert.AreEqual(amountBeforeDecrement - counter.Step, counter.Amount);
+            Assert.That(counter.LastModifiedAt, Is.EqualTo(lastModifiedAtStart));
+            Assert.That(amountBeforeDecrement - counter.Step, Is.EqualTo(counter.Amount));
 
             lastModifiedAtStart = counter.LastModifiedAt;
             counter.Reset();
-            Assert.Greater(counter.LastModifiedAt, lastModifiedAtStart);
-            Assert.IsTrue(counter.Amount == 0);
+            Assert.That(counter.LastModifiedAt, Is.GreaterThan(lastModifiedAtStart));
+            Assert.That(counter.Amount == 0, Is.True);
 
             var newName = "newName";
             lastModifiedAtStart = counter.LastModifiedAt;
             counter.Rename(newName);
-            Assert.AreEqual(newName, counter.Title);
-            Assert.AreEqual(lastModifiedAtStart, counter.LastModifiedAt);
+            Assert.That(newName, Is.EqualTo(counter.Title));
+            Assert.That(lastModifiedAtStart, Is.EqualTo(counter.LastModifiedAt));
         }
     }
 }

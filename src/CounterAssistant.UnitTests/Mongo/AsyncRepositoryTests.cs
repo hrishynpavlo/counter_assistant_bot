@@ -29,16 +29,16 @@ namespace CounterAssistant.UnitTests.Mongo
 
             //ACT & ASSERT
             var result = await _repository.CreateOneAsync(entity);
-            Assert.IsTrue(result);
+            Assert.That(result, Is.True);
 
             var byId = await _repository.FindOneAsync(Builders<TestEntity>.Filter.Eq(x => x.Id, id));
             Console.WriteLine($"db: {byId.DateTimeField}");
-            Assert.IsNotNull(byId);
-            Assert.AreEqual(entity, byId);
+            Assert.That(byId, Is.Not.Null);
+            Assert.That(entity, Is.EqualTo(byId));
 
             var byGuid = await _repository.FindOneAsync(Builders<TestEntity>.Filter.Eq(x => x.GuidField, guid));
-            Assert.IsNotNull(byGuid);
-            Assert.AreEqual(entity, byGuid);
+            Assert.That(byGuid, Is.Not.Null);
+            Assert.That(entity, Is.EqualTo(byGuid));
         }
 
         [Test]

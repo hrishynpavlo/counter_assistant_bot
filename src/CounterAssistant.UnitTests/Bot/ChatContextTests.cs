@@ -69,14 +69,14 @@ namespace CounterAssistant.UnitTests.Bot
             var context = ChatContext.Restore(user, null);
 
             //ASSERT
-            Assert.IsNotNull(context);
-            Assert.AreEqual(user.TelegramId, context.UserId);
-            Assert.AreEqual(user.BotInfo.ChatId, context.ChatId);
-            Assert.AreEqual(user.BotInfo.UserName, context.UserName);
-            Assert.AreEqual($"{user.FirstName} {user.LastName}", context.Name);
-            Assert.AreEqual(user.BotInfo.LastCommand, context.Command);
-            Assert.IsNull(user.BotInfo.CreateCounterFlowInfo);
-            Assert.IsNull(user.BotInfo.SelectedCounterId);
+            Assert.That(context, Is.Not.Null);
+            Assert.That(user.TelegramId, Is.EqualTo(context.UserId));
+            Assert.That(user.BotInfo.ChatId, Is.EqualTo(context.ChatId));
+            Assert.That(user.BotInfo.UserName, Is.EqualTo(context.UserName));
+            Assert.That($"{user.FirstName} {user.LastName}", Is.EqualTo(context.Name));
+            Assert.That(user.BotInfo.LastCommand, Is.EqualTo(context.Command));
+            Assert.That(user.BotInfo.CreateCounterFlowInfo, Is.Null);
+            Assert.That(user.BotInfo.SelectedCounterId, Is.Null);
         }
 
         [Test]
@@ -107,12 +107,12 @@ namespace CounterAssistant.UnitTests.Bot
             var context = ChatContext.Restore(user, counter);
 
             //ASSERT
-            Assert.IsNotNull(context);
-            Assert.IsNotNull(context.SelectedCounter);
-            Assert.IsNotNull(context.CreateCounterFlow);
-            Assert.AreEqual(counter.Id, context.SelectedCounter.Id);
-            Assert.AreEqual(user.BotInfo.CreateCounterFlowInfo.Args.Count, context.CreateCounterFlow.Args.Count);
-            Assert.AreEqual(Enum.Parse<CreateFlowSteps>(user.BotInfo.CreateCounterFlowInfo.State, true), context.CreateCounterFlow.State);
+            Assert.That(context, Is.Not.Null);
+            Assert.That(context.SelectedCounter, Is.Not.Null);
+            Assert.That(context.CreateCounterFlow, Is.Not.Null);
+            Assert.That(counter.Id, Is.EqualTo(context.SelectedCounter.Id));
+            Assert.That(user.BotInfo.CreateCounterFlowInfo.Args.Count, Is.EqualTo(context.CreateCounterFlow.Args.Count));
+            Assert.That(Enum.Parse<CreateFlowSteps>(user.BotInfo.CreateCounterFlowInfo.State, true), Is.EqualTo(context.CreateCounterFlow.State));
         }
 
         private static IEnumerable<TestCaseData> RestoreInvalidParamsCases()

@@ -80,10 +80,10 @@ namespace CounterAssistant.UnitTests.Bot
             var result = await contextProvider.GetContextAsync(request);
 
             //ASSERT
-            Assert.IsNotNull(result);
-            Assert.AreEqual(context.UserId, result.UserId);
-            Assert.AreEqual(context.UserName, result.UserName);
-            Assert.AreEqual(context.ChatId, result.ChatId);
+            Assert.That(result, Is.Not.Null);
+            Assert.That(context.UserId, Is.EqualTo(result.UserId));
+            Assert.That(context.UserName, Is.EqualTo(result.UserName));
+            Assert.That(context.ChatId, Is.EqualTo(result.ChatId));
         }
 
         [Test]
@@ -117,13 +117,13 @@ namespace CounterAssistant.UnitTests.Bot
             var context = await contextProvider.GetContextAsync(request);
 
             //ASSERT
-            Assert.IsNotNull(context);
-            Assert.IsTrue(cache.TryGetValue(context.UserId, out var _));
-            Assert.AreEqual(user.BotInfo.ChatId, context.ChatId);
-            Assert.AreEqual(user.BotInfo.LastCommand, context.Command);
-            Assert.IsNotNull(context.CreateCounterFlow);
-            Assert.AreEqual(user.BotInfo.CreateCounterFlowInfo.State, context.CreateCounterFlow.State.ToString());
-            Assert.IsNull(context.SelectedCounter);
+            Assert.That(context, Is.Not.Null);
+            Assert.That(cache.TryGetValue(context.UserId, out var _), Is.True);
+            Assert.That(user.BotInfo.ChatId, Is.EqualTo(context.ChatId));
+            Assert.That(user.BotInfo.LastCommand, Is.EqualTo(context.Command));
+            Assert.That(context.CreateCounterFlow, Is.Not.Null);
+            Assert.That(user.BotInfo.CreateCounterFlowInfo.State, Is.EqualTo(context.CreateCounterFlow.State.ToString()));
+            Assert.That(context.SelectedCounter, Is.Null);
         }
 
         [Test]
@@ -155,15 +155,15 @@ namespace CounterAssistant.UnitTests.Bot
             var context = await contextProvider.GetContextAsync(request);
 
             //ASSERT
-            Assert.IsNotNull(context);
-            Assert.AreEqual(message.From.Id, context.UserId);
-            Assert.AreEqual(message.From.Username, context.UserName);
-            Assert.AreEqual($"{message.From.FirstName} {message.From.LastName}", context.Name);
-            Assert.AreEqual(message.Chat.Id, context.ChatId);
-            Assert.AreEqual(BotCommands.START_COMMAND, context.Command);
-            Assert.IsNotNull(context.CreateCounterFlow);
-            Assert.AreEqual(CreateFlowSteps.None, context.CreateCounterFlow.State);
-            Assert.IsNull(context.SelectedCounter);
+            Assert.That(context, Is.Not.Null);
+            Assert.That(message.From.Id, Is.EqualTo(context.UserId));
+            Assert.That(message.From.Username, Is.EqualTo(context.UserName));
+            Assert.That($"{message.From.FirstName} {message.From.LastName}", Is.EqualTo(context.Name));
+            Assert.That(message.Chat.Id, Is.EqualTo(context.ChatId));
+            Assert.That(BotCommands.START_COMMAND, Is.EqualTo(context.Command));
+            Assert.That(context.CreateCounterFlow, Is.Not.Null);
+            Assert.That(CreateFlowSteps.None, Is.EqualTo(context.CreateCounterFlow.State));
+            Assert.That(context.SelectedCounter, Is.Null);
         }
     }
 }
