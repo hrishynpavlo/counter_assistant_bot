@@ -23,13 +23,13 @@ namespace CounterAssistant.UnitTests.Domains
 
             counter.Increment();
             counter.Increment();
-            Assert.That(counter.LastModifiedAt, Is.EqualTo(lastModifiedAtStart));
+            Assert.That(counter.LastModifiedAt, Is.GreaterThan(lastModifiedAtStart));
             Assert.That(counter.Step * 2 + amount, Is.EqualTo(counter.Amount));
 
             lastModifiedAtStart = counter.LastModifiedAt;
             var amountBeforeDecrement = counter.Amount;
             counter.Decrement();
-            Assert.That(counter.LastModifiedAt, Is.EqualTo(lastModifiedAtStart));
+            Assert.That(counter.LastModifiedAt, Is.GreaterThan(lastModifiedAtStart));
             Assert.That(amountBeforeDecrement - counter.Step, Is.EqualTo(counter.Amount));
 
             lastModifiedAtStart = counter.LastModifiedAt;

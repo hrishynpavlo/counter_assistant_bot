@@ -6,18 +6,14 @@ using CounterAssistant.Bot;
 using CounterAssistant.Bot.Formatters;
 using CounterAssistant.DataAccess;
 using CounterAssistant.DataAccess.DTO;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Quartz;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Threading.Tasks;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Telegram.Bot;
@@ -25,51 +21,44 @@ using Telegram.Bot;
 namespace CounterAssistant.API
 {
     [ExcludeFromCodeCoverage]
-    public class Startup
+    public static class DependencyInjection
     {
-        public void ConfigureServices(IServiceCollection services)
+        public static IServiceCollection AddConfiguration(this IServiceCollection services, IConfiguration configuration, AppSettings appSettings)
         {
-            var configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: false)
-                .AddJsonFile("secrets.json", optional: true)
-                .AddEnvironmentVariables()
-                .Build();
-
             services.AddSingleton<IConfiguration>(configuration);
-            
-            var appSettings = AppSettings.FromConfig(configuration);
+            services.AddSingleton(appSettings);
+            return services;
+        }
 
-            services.AddControllers();
-            services.AddSwaggerGen(c =>
+        public static IServiceCollection AddMongoDbPersistance(this IServiceCollection services)
+        {
+            services.AddSingleton<IMongoDatabase>(sp =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Counter Assistant Bot API", Version = "v1" });
-            });
-
-            services.AddSingleton<IMongoDatabase>(_ => 
-            {
+                var appSettings = sp.GetRequiredService<AppSettings>();
                 var pack = new ConventionPack { new CamelCaseElementNameConvention() };
 
                 ConventionRegistry.Register(
-                   "CamelCaseConvention",
-                   pack,
-                   t => true);
+                    "CamelCaseConvention",
+                    pack,
+                    t => true);
 
                 //important: map csuuid as uuid 
-                //obsolete: Configure serializers doesn't work
                 BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
                 var client = new MongoClient(appSettings.Mongo.Host);
                 return client.GetDatabase(appSettings.Mongo.Database);
             });
-
-            services.AddSingleton<IMongoCollection<UserDto>>(provider => 
+            
+            services.AddSingleton<IMongoCollection<UserDto>>(sp => 
             {
-                var mongo = provider.GetService<IMongoDatabase>();
+                var appSettings = sp.GetRequiredService<AppSettings>();
+                var mongo = sp.GetRequiredService<IMongoDatabase>();
                 return mongo.GetCollection<UserDto>(appSettings.Mongo.UserCollection);
             });
-
-            services.AddSingleton<IMongoCollection<CounterDto>>(provider =>
+            
+            services.AddSingleton<IMongoCollection<CounterDto>>(sp =>
             {
-                var mongo = provider.GetService<IMongoDatabase>();
+                var appSettings = sp.GetRequiredService<AppSettings>();
+                var mongo = sp.GetRequiredService<IMongoDatabase>();
                 var collection = mongo.GetCollection<CounterDto>(appSettings.Mongo.CounterCollection);
 
                 var builder = Builders<CounterDto>.IndexKeys;
@@ -80,16 +69,37 @@ namespace CounterAssistant.API
 
                 return collection;
             });
+            
+            services.AddSingleton(typeof(IAsyncRepository<>), typeof(AsyncRepository<>));
+            services.AddSingleton<ICounterService, CounterService>();
+            services.AddSingleton<IUserService, UserService>();
 
-            services.AddSingleton<ContextProviderSettings>(_ => new ContextProviderSettings 
-            { 
-                ExpirationTime = appSettings.InMemoryCache.CacheExpirationTime,
-                ProlongationTime = appSettings.InMemoryCache.CacheProlongationTime 
+            return services;
+        }
+
+        public static IServiceCollection AddTelegramChatContextProvider(this IServiceCollection services)
+        {
+            services.AddSingleton<ContextProviderSettings>(sp =>
+            {
+                var appSettings = sp.GetRequiredService<AppSettings>();
+                return new ContextProviderSettings
+                {
+                    ExpirationTime = appSettings.InMemoryCache.CacheExpirationTime,
+                    ProlongationTime = appSettings.InMemoryCache.CacheProlongationTime
+                };
             });
             services.AddSingleton<IContextProvider, InMemoryContextProvider>();
+            return services;
+        }
 
-            services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(appSettings.Telegram.Token));
-
+        public static IServiceCollection AddTelegramBot(this IServiceCollection services)
+        {
+            services.AddSingleton<ITelegramBotClient>(sp =>
+            {
+                var appSettings = sp.GetRequiredService<AppSettings>();
+                return new TelegramBotClient(appSettings.Telegram.Token);
+            });
+            
             services.AddHostedService<BotService>();
 
             services.AddQuartz(options => 
@@ -111,12 +121,19 @@ namespace CounterAssistant.API
                         .WithCronSchedule("0 5 0 ? * *");
                 });
             });
-
+            
             services.AddQuartzHostedService(options =>
             {
                 options.WaitForJobsToComplete = true;
             });
+            
+            services.AddSingleton<IBotMessageFormatter, BotMessageFormatter>();
 
+            return services;
+        }
+
+        public static IServiceCollection AddMetrics(this IServiceCollection services)
+        {
             var metrics = new MetricsBuilder()
                 .Configuration
                 .Configure(options => 
@@ -139,40 +156,23 @@ namespace CounterAssistant.API
                 options.MetricsTextEndpointEnabled = false;
                 options.EnvironmentInfoEndpointEnabled = false;
             });
-
-            services.AddMemoryCache();
-
-            services.AddHealthChecks()
-                .AddMongoDb(appSettings.Mongo.Host, tags: new[] { "database", "mongodb" })
-                .AddTelegramBot();
-
-            services.AddSingleton(typeof(IAsyncRepository<>), typeof(AsyncRepository<>));
-            services.AddSingleton<ICounterService, CounterService>();
-            services.AddSingleton<IUserService, UserService>();
-
-            services.AddSingleton<IBotMessageFormatter, BotMessageFormatter>();
+            
+            return services;
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public static IServiceCollection AddInMemoryCache(this IServiceCollection services)
         {
-            app.UseMetricsEndpoint();
+            services.AddMemoryCache();
+            return services;
+        }
 
-            app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CounterAssistant.API v1"));
-
-            app.UseRouting();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-                endpoints.MapGet("/", context =>
-                {
-                    context.Response.Redirect("/swagger");
-                    return Task.CompletedTask;
-                });
-                endpoints.MapHealthChecks("/health/liveness", HealthCheck.DefaultOptions);
-                endpoints.MapHealthChecks("/health/readiness", HealthCheck.DefaultOptions);
-            });
+        public static IServiceCollection AddHealthChecks(this IServiceCollection services, AppSettings appSettings)
+        {
+            services.AddHealthChecks()
+                .AddMongoDb(appSettings.Mongo.Host, tags: ["database", "mongodb"])
+                .AddTelegramBot();
+            
+            return services;
         }
     }
 }
