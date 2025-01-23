@@ -10,6 +10,7 @@ namespace CounterAssistant.API
         public TelegramSettings Telegram { get; private set; }
         public MongoSettings Mongo { get; private set; }
         public InMemoryCacheSettings InMemoryCache { get; private set; }
+        public MetricsSettings Metrics { get; private set; }
 
         public static AppSettings FromConfig(IConfiguration configuration)
         {
@@ -35,11 +36,18 @@ namespace CounterAssistant.API
             var cacheProlongationTime = TimeSpan.FromMinutes(inMemoryCacheConfig.GetValue("ProlongationTimeInMinutes", 3));
             var inMemoryCacheSettings = new InMemoryCacheSettings(cacheExpirationTime, cacheProlongationTime);
             
+            var metricsConfig = configuration.GetSection("Metrics");
+            var enabled = metricsConfig.GetValue("Enabled", false);
+            var influxHost = metricsConfig.GetValue("InfluxHost", string.Empty);
+            var influxDatabase = metricsConfig.GetValue("InfluxDatabase", string.Empty);
+            var metricsSettings = new MetricsSettings(enabled, influxHost, influxDatabase);
+            
             return new AppSettings
             {
                 Telegram = telegramSettings,
                 Mongo = mongoSettings,
-                InMemoryCache = inMemoryCacheSettings
+                InMemoryCache = inMemoryCacheSettings,
+                Metrics = metricsSettings
             };
         }
 
@@ -55,4 +63,5 @@ namespace CounterAssistant.API
     public record TelegramSettings(string Token);
     public record MongoSettings(string Host, string Database, string UserCollection, string CounterCollection);
     public record InMemoryCacheSettings(TimeSpan CacheExpirationTime, TimeSpan CacheProlongationTime);
+    public record MetricsSettings(bool Enabled, string InfluxHost, string InfluxDatabase);
 }

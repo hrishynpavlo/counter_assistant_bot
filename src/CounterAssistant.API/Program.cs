@@ -14,6 +14,7 @@ namespace CounterAssistant.API
     [ExcludeFromCodeCoverage]
     public static class Program
     {
+        private static ILogger _logger;
         public static void Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
@@ -22,17 +23,21 @@ namespace CounterAssistant.API
                 .Enrich.WithProperty("appVersion", AppSettings.AppVersion)
                 .Enrich.WithProperty("appEnvironment", AppSettings.Environment)
                 .Enrich.WithProperty("appName", AppSettings.AppName)
-                .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information)
+                .Enrich.FromLogContext()
+                .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information, 
+                    outputTemplate: "[{Timestamp:yyyy:MM:dd HH:mm:ss zzz}] [{SourceContext}] {NewLine}[{Level:u3}] {Message:j}{NewLine}{Exception}")
                 .CreateLogger();
+            
+            _logger = Log.Logger.ForContext(typeof(Program));
 
             try
             {
                 StartApp(args);
-                Log.Logger.Information("[Counter Assistant Bot] Successfully stopped.");
+                _logger.Information("[Counter Assistant Bot] Successfully stopped.");
             }
             catch (Exception ex)
             {
-                Log.Logger.Fatal(ex, "[Counter Assistant Bot] Crashed on startup.");
+                _logger.Fatal(ex, "[Counter Assistant Bot] Crashed on startup.");
             }
             finally
             {
@@ -63,7 +68,7 @@ namespace CounterAssistant.API
                 .AddTelegramChatContextProvider();
 
             builder.Services
-                .AddMetrics()
+                .AddMetrics(appSettings)
                 .AddHealthChecks(appSettings);
 
             builder.Services.AddControllers();
@@ -92,7 +97,7 @@ namespace CounterAssistant.API
             app.MapHealthChecks("/health/liveness", HealthCheck.DefaultOptions);
             app.MapHealthChecks("/health/readiness", HealthCheck.DefaultOptions);
             
-            Log.Logger.Information("[Counter Assistant Bot] Starting.");
+            _logger.Information("[Counter Assistant Bot] Starting.");
             
             app.Run();
         }

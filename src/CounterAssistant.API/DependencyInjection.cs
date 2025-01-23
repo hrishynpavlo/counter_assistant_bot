@@ -1,3 +1,4 @@
+using System;
 using App.Metrics;
 using App.Metrics.Formatters.Prometheus;
 using CounterAssistant.API.HealthChecks;
@@ -14,6 +15,7 @@ using MongoDB.Driver;
 using Quartz;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using App.Metrics.Reporting.InfluxDB;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Telegram.Bot;
@@ -132,9 +134,9 @@ namespace CounterAssistant.API
             return services;
         }
 
-        public static IServiceCollection AddMetrics(this IServiceCollection services)
+        public static IServiceCollection AddMetrics(this IServiceCollection services, AppSettings appSettings)
         {
-            var metrics = new MetricsBuilder()
+            var metricsBuilder = new MetricsBuilder()
                 .Configuration
                 .Configure(options => 
                 {
@@ -145,8 +147,22 @@ namespace CounterAssistant.API
                     options.GlobalTags["machine_name"] = AppSettings.MachineName;
                 })
                 .OutputMetrics
-                .AsPrometheusPlainText()
-                .Build();
+                .AsPrometheusPlainText();
+
+            if (appSettings.Metrics.Enabled)
+            {
+                metricsBuilder.Report.ToInfluxDb(options =>
+                {
+                    options.FlushInterval = TimeSpan.FromSeconds(30);
+                    options.InfluxDb = new InfluxDbOptions
+                    {
+                        BaseUri = new Uri(appSettings.Metrics.InfluxHost),
+                        Database = appSettings.Metrics.InfluxDatabase
+                    };
+                });
+            }
+                
+            var metrics = metricsBuilder.Build();
 
             services.AddMetrics(metrics);
             services.AddMetricsEndpoints(options => 
@@ -169,7 +185,9 @@ namespace CounterAssistant.API
         public static IServiceCollection AddHealthChecks(this IServiceCollection services, AppSettings appSettings)
         {
             services.AddHealthChecks()
-                .AddMongoDb(appSettings.Mongo.Host, tags: ["database", "mongodb"])
+                .AddMongoDb(_ => new MongoClient(appSettings.Mongo.Host),
+                    _ => appSettings.Mongo.Database, 
+                    tags: ["database", "mongodb"], timeout: TimeSpan.FromSeconds(5))
                 .AddTelegramBot();
             
             return services;
