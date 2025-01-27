@@ -14,8 +14,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Quartz;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using App.Metrics.Reporting.InfluxDB;
+using App.Metrics.Reporting.InfluxDb2;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Telegram.Bot;
@@ -147,7 +146,7 @@ namespace CounterAssistant.API
                     options.GlobalTags["machine_name"] = AppSettings.MachineName;
                 })
                 .OutputMetrics
-                .AsPrometheusPlainText();
+                .AsInfluxDbLineProtocol();
 
             if (appSettings.Metrics.Enabled)
             {
@@ -157,18 +156,26 @@ namespace CounterAssistant.API
                     options.InfluxDb = new InfluxDbOptions
                     {
                         BaseUri = new Uri(appSettings.Metrics.InfluxHost),
-                        Database = appSettings.Metrics.InfluxDatabase
+                        Organization = appSettings.Metrics.InfluxOrg,
+                        Token = appSettings.Metrics.InfluxToken,
+                        Bucket = appSettings.Metrics.InfluxBucket,
+                        CreateBucketIfNotExists = true
                     };
                 });
+
+                services.AddMetricsReportingHostedService();
+                services.AddAppMetricsGcEventsMetricsCollector();
             }
                 
             var metrics = metricsBuilder.Build();
+
+            var s = metrics.Options.ReportingEnabled;
 
             services.AddMetrics(metrics);
             services.AddMetricsEndpoints(options => 
             {
                 options.MetricsEndpointEnabled = true;
-                options.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.OfType<MetricsPrometheusTextOutputFormatter>().First();
+                options.MetricsEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
                 options.MetricsTextEndpointEnabled = false;
                 options.EnvironmentInfoEndpointEnabled = false;
             });

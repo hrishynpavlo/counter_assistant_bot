@@ -12,7 +12,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="App.Metrics.InfluxDB" Version="4.3.0" />
+    <PackageReference Include="AK.App.Metrics.Reporting.InfluxDB2" Version="4.3.1" />
+    <PackageReference Include="App.Metrics.AspNetCore.All" Version="4.3.0" />
     <PackageReference Include="AspNetCore.HealthChecks.MongoDb" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.HealthChecks" Version="2.2.0" />
     <PackageReference Include="Quartz.AspNetCore" Version="3.13.1" />
@@ -29,10 +30,6 @@
     <Content Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Extensions\" />
   </ItemGroup>
 
 </Project>
