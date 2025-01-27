@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
+using Serilog.Events;
+using Serilog.Formatting.Json;
 
 namespace CounterAssistant.API
 {
@@ -17,16 +19,27 @@ namespace CounterAssistant.API
         private static ILogger _logger;
         public static void Main(string[] args)
         {
-            Log.Logger = new LoggerConfiguration()
+            var loggerConfiguration = new LoggerConfiguration()
                 .Filter.ByExcluding(Matching.FromSource("Microsoft"))
                 .Filter.ByExcluding(Matching.FromSource("Quartz"))
                 .Enrich.WithProperty("appVersion", AppSettings.AppVersion)
                 .Enrich.WithProperty("appEnvironment", AppSettings.Environment)
                 .Enrich.WithProperty("appName", AppSettings.AppName)
-                .Enrich.FromLogContext()
-                .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information, 
-                    outputTemplate: "[{Timestamp:yyyy:MM:dd HH:mm:ss zzz}] [{SourceContext}] {NewLine}[{Level:u3}] {Message:j}{NewLine}{Exception}")
-                .CreateLogger();
+                .Enrich.FromLogContext();
+            
+            if (AppSettings.IsProduction)
+            {
+                loggerConfiguration.WriteTo.Console(new JsonFormatter(renderMessage: true), 
+                    restrictedToMinimumLevel: LogEventLevel.Information);
+            }
+            else
+            {
+                loggerConfiguration.WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information,
+                    outputTemplate:
+                    "[{Timestamp:yyyy:MM:dd HH:mm:ss zzz}] [{SourceContext}] {NewLine}[{Level:u3}] {Message:j}{NewLine}{Exception}");
+
+            }
+            Log.Logger = loggerConfiguration.CreateLogger();
             
             _logger = Log.Logger.ForContext(typeof(Program));
 

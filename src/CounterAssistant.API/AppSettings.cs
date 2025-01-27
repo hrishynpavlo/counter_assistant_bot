@@ -15,7 +15,6 @@ namespace CounterAssistant.API
         public static AppSettings FromConfig(IConfiguration configuration)
         {
             Server = configuration.GetValue("Server", "local");
-            Environment = configuration.GetValue("Environment", "local");
             CommitHash = configuration.GetValue("COMMIT_HASH", "local");
             StartedAt = DateTime.UtcNow;
             MachineName = configuration.GetValue("MACHINE_NAME", "local");
@@ -55,11 +54,12 @@ namespace CounterAssistant.API
 
         public static string CommitHash { get; private set; }
         public static string Server { get; private set; }
-        public static string Environment { get; private set; }
+        public static string Environment => System.Environment.GetEnvironmentVariable("Environment") ?? "local";
         public static DateTime StartedAt { get; private set; }
         public static string MachineName { get; private set; }
         public static string AppName => "counter_assistance_bot";
         public static string AppVersion => "v1-beta";
+        public static bool IsProduction => Environment == "production";
     }
 
     public record TelegramSettings(string Token);
