@@ -16,11 +16,4 @@
       <ProjectReference Include="..\CounterAssistant.DataAccess\CounterAssistant.DataAccess.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <None Remove="secrets.json" />
-      <Content Include="secrets.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-
 </Project>
