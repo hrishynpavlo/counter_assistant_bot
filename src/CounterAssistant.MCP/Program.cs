@@ -4,7 +4,6 @@ using CounterAssistant.MCP;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 using MongoDB.Bson;
@@ -13,7 +12,6 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using Newtonsoft.Json;
-
 
 var appSettings = new ConfigurationBuilder()
     .AddJsonFile("secrets.json", optional: true)
