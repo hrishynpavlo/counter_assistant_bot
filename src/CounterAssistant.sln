@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CounterAssistant.DataAccess
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CounterAssistant.UnitTests", "CounterAssistant.UnitTests\CounterAssistant.UnitTests.csproj", "{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CounterAssistant.MCP", "CounterAssistant.MCP\CounterAssistant.MCP.csproj", "{86A22775-9C64-42DC-AE06-F3B8D1B55494}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9AA436A-E67D-4293-A2B4-9A6ED94921BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86A22775-9C64-42DC-AE06-F3B8D1B55494}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86A22775-9C64-42DC-AE06-F3B8D1B55494}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86A22775-9C64-42DC-AE06-F3B8D1B55494}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86A22775-9C64-42DC-AE06-F3B8D1B55494}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
