@@ -1,4 +1,4 @@
-﻿name: push-mcp-image.yml
+﻿name: push-mcp-image
 
 on:
   workflow_dispatch:

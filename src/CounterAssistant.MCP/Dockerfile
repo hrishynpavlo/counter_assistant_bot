@@ -2,8 +2,8 @@
 WORKDIR /build
 COPY ./src/ .
 RUN dotnet restore
-RUN dotnet build --runtime linux/arm64
-RUN dotnet publish CounterAssistant.MCP/CounterAssistant.MCP.csproj -c Release --runtime linux/arm64 -o published-app
+RUN dotnet build --runtime linux-arm64
+RUN dotnet publish CounterAssistant.MCP/CounterAssistant.MCP.csproj -c Release --runtime linux-arm64 -o published-app
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
